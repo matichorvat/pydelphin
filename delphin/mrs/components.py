@@ -165,9 +165,9 @@ class MrsVariable(object):
 
 
 # I'm not sure this belongs here, but anchors are MrsVariables...
-MrsVariable =  VARIABLES, LNKS, and HOOKS
+#MrsVariable =  VARIABLES, LNKS, and HOOKS
 
-@total_ordering(MrsVariable)
+#@total_ordering(MrsVariable)
 class AnchorMixin(object):
     @property
     def anchor(self):
