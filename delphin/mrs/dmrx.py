@@ -157,7 +157,7 @@ def decode_lnk(elem):
 _strict = False
 
 
-def encode(ms, strict=False, encoding=u'unicode', pretty_print=False):
+def encode(ms, strict=False, encoding='UTF-8', pretty_print=False):
     e = etree.Element(u'dmrs-list')
     for m in ms:
         e.append(encode_dmrs(m, strict=strict))
