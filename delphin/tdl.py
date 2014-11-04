@@ -214,10 +214,10 @@ def parse_typedef(tokens):
         )
     except AssertionError as ex:
         msg = 'Remaining tokens: {}'.format(list(tokens))
-        raise TdlParsingError(msg, identifier=identifier) from ex
+        raise TdlParsingError(msg, identifier=identifier)
     except StopIteration as ex:
         msg = 'Unexpected termination.'
-        raise TdlParsingError(msg, identifier=identifier or '?') from ex
+        raise TdlParsingError(msg, identifier=identifier or '?')
     return t
 
 
