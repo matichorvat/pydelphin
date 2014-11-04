@@ -1,4 +1,4 @@
-"""
+u"""
 The `itsdb` module makes it easy to work with [incr tsdb()] profiles.
 The :py:class:`ItsdbProfile` class works with whole profiles, but it
 generally relies on the module-level functions to do its work (such
@@ -10,6 +10,7 @@ profiles can be customized through the use of
 skeleton using the :py:func:`make_skeleton` function.
 """
 
+from __future__ import with_statement
 import os
 import re
 from gzip import open as gzopen
@@ -19,39 +20,42 @@ from collections import defaultdict, namedtuple, OrderedDict
 from itertools import chain
 from delphin._exceptions import ItsdbError
 from delphin.util import safe_int
+from io import open
+from itertools import imap
+from itertools import izip
 
 ##############################################################################
 # Module variables
 
-_relations_filename = 'relations'
-_field_delimiter = '@'
+_relations_filename = u'relations'
+_field_delimiter = u'@'
 _character_escapes = [
-    (_field_delimiter, '\\s'),
-    ('\n', '\\n'),
-    ('\\', '\\\\')
+    (_field_delimiter, u'\\s'),
+    (u'\n', u'\\n'),
+    (u'\\', u'\\\\')
 ]
 _default_datatype_values = {
-    ':integer': '-1'
+    u':integer': u'-1'
 }
 _default_field_values = {
-    'i-wf': '1'
+    u'i-wf': u'1'
 }
 _primary_keys = [
-    ["i-id", "item"],
-    ["p-id", "phenomenon"],
-    ["ip-id", "item-phenomenon"],
-    ["s-id", "set"],
-    ["run-id", "run"],
-    ["parse-id", "parse"],
-    ["e-id", "edge"],
-    ["f-id", "fold"]
+    [u"i-id", u"item"],
+    [u"p-id", u"phenomenon"],
+    [u"ip-id", u"item-phenomenon"],
+    [u"s-id", u"set"],
+    [u"run-id", u"run"],
+    [u"parse-id", u"parse"],
+    [u"e-id", u"edge"],
+    [u"f-id", u"fold"]
 ]
 
 ##############################################################################
 # Non-class (i.e. static) functions
 
-Field = namedtuple('Field', ['name', 'datatype', 'key', 'other', 'comment'])
-'''
+Field = namedtuple(u'Field', [u'name', u'datatype', u'key', u'other', u'comment'])
+u'''
 A tuple describing a column in an [incr tsdb()] profile.
 
 Args:
@@ -64,7 +68,7 @@ Args:
 
 
 def get_relations(path):
-    """
+    u"""
     Parse the relations file and return a dictionary describing the database
     structure.
 
@@ -75,29 +79,29 @@ def get_relations(path):
     """
 
     relations = OrderedDict()
-    table_re = re.compile(r'^(?P<table>\w.+):$')
-    field_re = re.compile(r'\s*(?P<name>\S+)'
-                          r'(\s+(?P<props>[^#]+))?'
-                          r'(\s*#\s*(?P<comment>.*)$)?')
+    table_re = re.compile(ur'^(?P<table>\w.+):$')
+    field_re = re.compile(ur'\s*(?P<name>\S+)'
+                          ur'(\s+(?P<props>[^#]+))?'
+                          ur'(\s*#\s*(?P<comment>.*)$)?')
     f = open(path)
     current_table = None
     for line in f:
         table_match = table_re.search(line)
         field_match = field_re.search(line)
         if table_match is not None:
-            current_table = table_match.group('table')
+            current_table = table_match.group(u'table')
             if current_table not in relations:
                 relations[current_table] = list()
         elif current_table is not None and field_match is not None:
-            name = field_match.group('name')
-            props = field_match.group('props').split()
-            comment = field_match.group('comment')
+            name = field_match.group(u'name')
+            props = field_match.group(u'props').split()
+            comment = field_match.group(u'comment')
             key = False
             if len(props) > 0:
                 datatype = props.pop(0)
-            if ':key' in props:
+            if u':key' in props:
                 key = True
-                props.remove(':key')
+                props.remove(u':key')
             relations[current_table].append(
                 Field(name, datatype, key, props, comment)
             )
@@ -105,9 +109,9 @@ def get_relations(path):
     return relations
 
 
-data_specifier_re = re.compile(r'(?P<table>[^:]+)?(:(?P<cols>.+))?$')
+data_specifier_re = re.compile(ur'(?P<table>[^:]+)?(:(?P<cols>.+))?$')
 def get_data_specifier(string):
-    """
+    u"""
     Return a tuple (table, col) for some [incr tsdb()] data specifier.
     For example::
 
@@ -120,17 +124,17 @@ def get_data_specifier(string):
     match = data_specifier_re.match(string)
     if match is None:
         return (None, None)
-    table = match.group('table')
+    table = match.group(u'table')
     if table is not None:
         table = table.strip()
-    cols = match.group('cols')
+    cols = match.group(u'cols')
     if cols is not None:
-        cols = list(map(str.strip, cols.split('@')))
+        cols = list(imap(unicode.strip, cols.split(u'@')))
     return (table, cols)
 
 
 def decode_row(line):
-    """
+    u"""
     Decode a raw line from a profile into a list of column values.
 
     Decoding involves splitting the line by the field delimiter ('@' by
@@ -142,11 +146,11 @@ def decode_row(line):
         A list of column values.
     """
     fields = line.strip().split(_field_delimiter)
-    return list(map(unescape, fields))
+    return list(imap(unescape, fields))
 
 
 def encode_row(fields):
-    """
+    u"""
     Encode a list of column values into a [incr tsdb()] profile line.
 
     Encoding involves escaping special characters for each value, then
@@ -159,11 +163,11 @@ def encode_row(fields):
     Returns:
         A [incr tsdb()]-encoded string
     """
-    return _field_delimiter.join(map(escape, map(str, fields)))
+    return _field_delimiter.join(imap(escape, imap(unicode, fields)))
 
 
 def escape(string):
-    """
+    u"""
     Replace any special characters with their [incr tsdb()] escape
     sequences. Default sequences are::
 
@@ -183,13 +187,13 @@ def escape(string):
     return string
 
 
-_character_unescapes = {'\\s': _field_delimiter, '\\n': '\n', '\\\\': '\\'}
+_character_unescapes = {u'\\s': _field_delimiter, u'\\n': u'\n', u'\\\\': u'\\'}
 _unescape_func = lambda m: _character_unescapes[m.group(0)]
-_unescape_re = re.compile(r'(\\s|\\n|\\\\)')
+_unescape_re = re.compile(ur'(\\s|\\n|\\\\)')
 
 
 def unescape(string):
-    """
+    u"""
     Replace [incr tsdb()] escape sequences with the regular equivalents.
     See :py:func:`escape`.
 
@@ -206,36 +210,36 @@ def _write_table(profile_dir, table_name, rows, fields,
     # don't gzip if empty
     rows = iter(rows)
     try:
-        first_row = next(rows)
+        first_row = rows.next()
     except StopIteration:
         gzip = False
     else:
         rows = chain([first_row], rows)
     if gzip and append:
-        logging.warning('Appending to a gzip file may result in '
-                        'inefficient compression.')
+        logging.warning(u'Appending to a gzip file may result in '
+                        u'inefficient compression.')
 
     if not os.path.exists(profile_dir):
-        raise ItsdbError('Profile directory does not exist: {}'
+        raise ItsdbError(u'Profile directory does not exist: {}'
                          .format(profile_dir))
 
     tbl_filename = os.path.join(profile_dir, table_name)
-    mode = 'a' if append else 'w'
+    mode = u'a' if append else u'w'
     if gzip:
         # text mode only from py3.3; until then use TextIOWrapper
         #mode += 't'  # text mode for gzip
-        f = TextIOWrapper(gzopen(tbl_filename + '.gz', mode=mode))
+        f = TextIOWrapper(gzopen(tbl_filename + u'.gz', mode=mode))
     else:
         f = open(tbl_filename, mode=mode)
 
     for row in rows:
-        f.write(make_row(row, fields) + '\n')
+        f.write(make_row(row, fields) + u'\n')
 
     f.close()
 
 
 def make_row(row, fields):
-    """
+    u"""
     Encode a mapping of column name to values into a [incr tsdb()]
     profile line. The `fields` parameter determines what columns are
     used, and default values are provided if a column is missing from
@@ -247,13 +251,13 @@ def make_row(row, fields):
     Returns:
         A [incr tsdb()]-encoded string
     """
-    row_fields = [row.get(f.name, str(default_value(f.name, f.datatype)))
+    row_fields = [row.get(f.name, unicode(default_value(f.name, f.datatype)))
                   for f in fields]
     return encode_row(row_fields)
 
 
 def default_value(fieldname, datatype):
-    """
+    u"""
     Return the default value for a column.
 
     If the column name (e.g. `i-wf`) is defined to have an idiosyncratic
@@ -269,11 +273,11 @@ def default_value(fieldname, datatype):
     if fieldname in _default_field_values:
         return _default_field_values[fieldname]
     else:
-        return _default_datatype_values.get(datatype, '')
+        return _default_datatype_values.get(datatype, u'')
 
 
 def filter_rows(filters, rows):
-    """
+    u"""
     Yield rows matching all applicable filters.
 
     Filter functions have binary arity (e.g. `filter(row, col)`) where
@@ -297,7 +301,7 @@ def filter_rows(filters, rows):
 
 
 def apply_rows(applicators, rows):
-    """
+    u"""
     Yield rows after applying the applicator functions to them.
 
     Applicators are simple unary functions that return a value, and that
@@ -317,13 +321,13 @@ def apply_rows(applicators, rows):
     for row in rows:
         for (cols, function) in applicators:
             for col in (cols or []):
-                value = row.get(col, '')
+                value = row.get(col, u'')
                 row[col] = function(row, value)
         yield row
 
 
-def select_rows(cols, rows, mode='list'):
-    """
+def select_rows(cols, rows, mode=u'list'):
+    u"""
     Yield data selected from rows.
 
     It is sometimes useful to select a subset of data from a profile.
@@ -347,15 +351,15 @@ def select_rows(cols, rows, mode='list'):
         Selected data in the form specified by `mode`.
     """
     mode = mode.lower()
-    if mode == 'list':
+    if mode == u'list':
         cast = lambda cols, data: data
-    elif mode == 'dict':
-        cast = lambda cols, data: dict(zip(cols, data))
-    elif mode == 'row':
+    elif mode == u'dict':
+        cast = lambda cols, data: dict(izip(cols, data))
+    elif mode == u'row':
         cast = lambda cols, data: encode_row(data)
     else:
-        raise ItsdbError('Invalid mode for select operation: {}\n'
-                         '  Valid options include: list, dict, row'
+        raise ItsdbError(u'Invalid mode for select operation: {}\n'
+                         u'  Valid options include: list, dict, row'
                          .format(mode))
     for row in rows:
         data = [row.get(c) for c in cols]
@@ -363,7 +367,7 @@ def select_rows(cols, rows, mode='list'):
 
 
 def match_rows(rows1, rows2, key, sort_keys=True):
-    """
+    u"""
     Yield triples of (value, left_rows, right_rows) where `left_rows`
     and `right_rows` are lists of rows that share the same column
     value for `key`.
@@ -387,7 +391,7 @@ def match_rows(rows1, rows2, key, sort_keys=True):
 
 
 def make_skeleton(path, relations, item_rows, gzip=False):
-    """
+    u"""
     Instantiate a new profile skeleton (only the relations file and
     item file) from an existing relations file and a list of rows
     for the item table. For standard relations files, it is suggested
@@ -409,24 +413,24 @@ def make_skeleton(path, relations, item_rows, gzip=False):
     try:
         os.makedirs(path)
     except OSError:
-        raise ItsdbError('Path already exists: {}.'.format(path))
+        raise ItsdbError(u'Path already exists: {}.'.format(path))
     import shutil
     shutil.copyfile(relations, os.path.join(path, _relations_filename))
     prof = ItsdbProfile(path, index=False)
-    prof.write_table('item', item_rows, gzip=gzip)
+    prof.write_table(u'item', item_rows, gzip=gzip)
     return prof
 
 
 ##############################################################################
 # Profile class
 
-class ItsdbProfile:
-    """
+class ItsdbProfile(object):
+    u"""
     A [incr tsdb()] profile, analyzed and ready for reading or writing.
     """
 
     def __init__(self, path, filters=None, applicators=None, index=True):
-        """
+        u"""
         Only the `path` parameter is required.
 
         Args:
@@ -464,7 +468,7 @@ class ItsdbProfile:
             self._build_index()
 
     def add_filter(self, table, cols, condition):
-        """
+        u"""
         Add a filter. When reading `table`, rows in `table` will be
         filtered by :py:func:`filter_rows`.
 
@@ -474,8 +478,8 @@ class ItsdbProfile:
             condition: The filter function.
         """
         if table is not None and table not in self.relations:
-            raise ItsdbError('Cannot add filter; table "{}" is not defined '
-                             'by the relations file.'
+            raise ItsdbError(u'Cannot add filter; table "{}" is not defined '
+                             u'by the relations file.'
                              .format(table))
         # this is a hack, though perhaps well-motivated
         if cols is None:
@@ -483,7 +487,7 @@ class ItsdbProfile:
         self.filters[table].append((cols, condition))
 
     def add_applicator(self, table, cols, function):
-        """
+        u"""
         Add an applicator. When reading `table`, rows in `table` will be
         modified by :py:func:`apply_rows`.
 
@@ -494,21 +498,21 @@ class ItsdbProfile:
         """
 
         if table not in self.relations:
-            raise ItsdbError('Cannot add applicator; table "{}" is not '
-                             'defined by the relations file.'
+            raise ItsdbError(u'Cannot add applicator; table "{}" is not '
+                             u'defined by the relations file.'
                              .format(table))
         if cols is None:
-            raise ItsdbError('Cannot add applicator; columns not specified.')
+            raise ItsdbError(u'Cannot add applicator; columns not specified.')
         fields = set(f.name for f in self.relations[table])
         for col in cols:
             if col not in fields:
-                raise ItsdbError('Cannot add applicator; column "{}" not '
-                                 'defined by the relations file.'
+                raise ItsdbError(u'Cannot add applicator; column "{}" not '
+                                 u'defined by the relations file.'
                                  .format(col))
         self.applicators[table].append((cols, function))
 
     def _build_index(self):
-        self._index = {key: None for key, _ in _primary_keys}
+        self._index = dict((key, None) for key, _ in _primary_keys)
         for (keyname, table) in _primary_keys:
             ids = set()
             for row in self.read_table(table):
@@ -519,34 +523,34 @@ class ItsdbProfile:
     def table_relations(self, table):
         if table not in self.relations:
             raise ItsdbError(
-                'Table {} is not defined in the profiles relations.'
+                u'Table {} is not defined in the profiles relations.'
                 .format(table)
             )
         return self.relations[table]
 
     def _open_table(self, table):
         tbl_filename = os.path.join(self.root, table)
-        gz_filename = tbl_filename + '.gz'
+        gz_filename = tbl_filename + u'.gz'
         if os.path.exists(tbl_filename) and os.path.exists(gz_filename):
-            logging.warning('Both gzipped and plaintext files for table "{}" '
-                            'were found; attempting to use the plaintext one.'
+            logging.warning(u'Both gzipped and plaintext files for table "{}" '
+                            u'were found; attempting to use the plaintext one.'
                             .format(table))
         if os.path.exists(tbl_filename):
             f = open(tbl_filename)
         elif os.path.exists(gz_filename):
             # text mode only from py3.3; until then use TextIOWrapper
             f = TextIOWrapper(
-                BufferedReader(gzopen(tbl_filename + '.gz', mode='r'))
+                BufferedReader(gzopen(tbl_filename + u'.gz', mode=u'r'))
             )
         else:
             raise ItsdbError(
-                'Table {} does not exist at {}(.gz)'
+                u'Table {} does not exist at {}(.gz)'
                 .format(table, tbl_filename)
             )
         return f
 
     def read_raw_table(self, table):
-        """
+        u"""
         Yield rows in the [incr tsdb()] `table`. A row is a dictionary
         mapping column names to values. Data from a profile is decoded
         by :py:func:`decode_row`. No filters or applicators are used.
@@ -559,15 +563,15 @@ class ItsdbProfile:
                 fields = decode_row(line)
                 if len(fields) != field_len:
                     # should this throw an exception instead?
-                    logging.error('Number of stored fields ({}) '
-                                  'differ from the expected number({}); '
-                                  'fields may be misaligned!'
+                    logging.error(u'Number of stored fields ({}) '
+                                  u'differ from the expected number({}); '
+                                  u'fields may be misaligned!'
                                   .format(len(fields), field_len))
-                row = OrderedDict(zip(field_names, fields))
+                row = OrderedDict(izip(field_names, fields))
                 yield row
 
     def read_table(self, table, key_filter=True):
-        """
+        u"""
         Yield rows in the [incr tsdb()] `table` that pass any defined
         filters, and with values changed by any applicators. If no
         filters or applicators are defined, the result is the same as
@@ -588,8 +592,8 @@ class ItsdbProfile:
         rows = self.read_raw_table(table)
         return filter_rows(filters, apply_rows(applicators, rows))
 
-    def select(self, table, cols, mode='list', key_filter=True):
-        """
+    def select(self, table, cols, mode=u'list', key_filter=True):
+        u"""
         Yield selected rows from `table`. This method just calls
         :py:func:`select_rows` on the rows read from `table`.
         """
@@ -600,7 +604,7 @@ class ItsdbProfile:
             yield row
 
     def join(self, table1, table2, key_filter=True):
-        """
+        u"""
         Yield rows from a table built by joining `table1` and `table2`.
         The column names in the rows have the original table name
         prepended and separated by a colon. For example, joining tables
@@ -621,15 +625,15 @@ class ItsdbProfile:
         for row1 in self.read_table(table1, key_filter=key_filter):
             for row2 in table2_data.get(row1[key], []):
                 joinedrow = OrderedDict(
-                    [('{}:{}'.format(table1, k), v)
+                    [(u'{}:{}'.format(table1, k), v)
                      for k, v in row1.items()] +
-                    [('{}:{}'.format(table2, k), v)
+                    [(u'{}:{}'.format(table2, k), v)
                      for k, v in row2.items()]
                 )
                 yield joinedrow
 
     def write_table(self, table, rows, append=False, gzip=False):
-        """
+        u"""
         Encode and write out `table` to the profile directory.
 
         Args:
@@ -650,7 +654,7 @@ class ItsdbProfile:
     def write_profile(self, profile_directory, relations_filename=None,
                       key_filter=True,
                       append=False, gzip=None):
-        """
+        u"""
         Write all tables (as specified by the relations) to a profile.
 
         Args:
@@ -678,12 +682,12 @@ class ItsdbProfile:
             fn = os.path.join(self.root, table)
             if os.path.exists(fn):
                 pass
-            elif os.path.exists(fn + '.gz'):
-                fn += '.gz'
+            elif os.path.exists(fn + u'.gz'):
+                fn += u'.gz'
             else:
                 # warning or debug
                 continue
-            _gzip = gzip if gzip is not None else fn.endswith('.gz')
+            _gzip = gzip if gzip is not None else fn.endswith(u'.gz')
             rows = self.read_table(table, key_filter=key_filter)
             _write_table(profile_directory, table, rows, fields,
                          append=append, gzip=_gzip)

@@ -16,6 +16,7 @@ from delphin.mrs import (Dmrs, Node, Link, Pred, Lnk)
 from delphin.mrs.config import QUANTIFIER_SORT
 
 import xml.etree.ElementTree as etree
+from itertools import imap
 
 ##############################################################################
 ##############################################################################
@@ -25,19 +26,19 @@ import xml.etree.ElementTree as etree
 def load(fh, single=False):
     ms = decode(fh)
     if single:
-        ms = next(ms)
+        ms = ms.next()
     return ms
 
 
-def loads(s, single=False, encoding='utf-8'):
-    ms = decode(BytesIO(bytes(s, encoding=encoding)))
+def loads(s, single=False, encoding=u'utf-8'):
+    ms = decode(BytesIO(str(s).encode(encoding)))
     if single:
-        ms = next(ms)
+        ms = ms.next()
     return ms
 
 
 def dump(fh, ms, **kwargs):
-    print(dumps(ms, **kwargs), file=fh)
+    print >>fh, dumps(ms, **kwargs)
 
 
 def dumps(ms, single=False, pretty_print=False, **kwargs):
@@ -57,13 +58,13 @@ dumps_one = lambda m, **kwargs: dumps(m, single=True, **kwargs)
 # Decoding
 
 def decode(fh):
-    """Decode a DMRX-encoded DMRS structure."""
+    u"""Decode a DMRX-encoded DMRS structure."""
     # <!ELEMENT dmrs-list (dmrs)*>
     # if memory becomes a big problem, consider catching start events,
     # get the root element (later start events can be ignored), and
     # root.clear() after decoding each mrs
-    for event, elem in etree.iterparse(fh, events=('end',)):
-        if elem.tag == 'dmrs':
+    for event, elem in etree.iterparse(fh, events=(u'end',)):
+        if elem.tag == u'dmrs':
             yield decode_dmrs(elem)
             elem.clear()
 
@@ -74,12 +75,12 @@ def decode_dmrs(elem):
     #           cto   CDATA #REQUIRED
     #           surface   CDATA #IMPLIED
     #           ident     CDATA #IMPLIED >
-    elem = elem.find('.')  # in case elem is an ElementTree rather than Element
-    return Dmrs(nodes=list(map(decode_node, elem.iter('node'))),
-                links=list(map(decode_link, elem.iter('link'))),
+    elem = elem.find(u'.')  # in case elem is an ElementTree rather than Element
+    return Dmrs(nodes=list(imap(decode_node, elem.iter(u'node'))),
+                links=list(imap(decode_link, elem.iter(u'link'))),
                 lnk=decode_lnk(elem),
-                surface=elem.get('surface'),
-                identifier=elem.get('ident'))
+                surface=elem.get(u'surface'),
+                identifier=elem.get(u'ident'))
 
 
 def decode_node(elem):
@@ -91,13 +92,13 @@ def decode_node(elem):
     #           surface   CDATA #IMPLIED
     #           base      CDATA #IMPLIED
     #           carg CDATA #IMPLIED >
-    return Node(pred=decode_pred(elem.find('*[1]')),
-                nodeid=elem.get('nodeid'),
-                sortinfo=decode_sortinfo(elem.find('sortinfo')),
+    return Node(pred=decode_pred(elem.find(u'*[1]')),
+                nodeid=elem.get(u'nodeid'),
+                sortinfo=decode_sortinfo(elem.find(u'sortinfo')),
                 lnk=decode_lnk(elem),
-                surface=elem.get('surface'),
-                base=elem.get('base'),
-                carg=elem.get('carg'))
+                surface=elem.get(u'surface'),
+                base=elem.get(u'base'),
+                carg=elem.get(u'carg'))
 
 
 def decode_pred(elem):
@@ -107,12 +108,12 @@ def decode_pred(elem):
     #           pos (v|n|j|r|p|q|c|x|u|a|s) #REQUIRED
     #           sense CDATA #IMPLIED >
     # <!ELEMENT gpred (#PCDATA)>
-    if elem.tag == 'gpred':
+    if elem.tag == u'gpred':
         return Pred.grammarpred(elem.text)
-    elif elem.tag == 'realpred':
-        return Pred.realpred(elem.get('lemma'),
-                             elem.get('pos'),
-                             elem.get('sense'))
+    elif elem.tag == u'realpred':
+        return Pred.realpred(elem.get(u'lemma'),
+                             elem.get(u'pos'),
+                             elem.get(u'sense'))
 
 
 def decode_sortinfo(elem):
@@ -140,14 +141,14 @@ def decode_link(elem):
     #           to   CDATA #REQUIRED >
     # <!ELEMENT rargname (#PCDATA)>
     # <!ELEMENT post (#PCDATA)>
-    return Link(start=elem.get('from'),
-                end=elem.get('to'),
-                argname=elem.find('rargname').text,
-                post=elem.find('post').text)
+    return Link(start=elem.get(u'from'),
+                end=elem.get(u'to'),
+                argname=elem.find(u'rargname').text,
+                post=elem.find(u'post').text)
 
 
 def decode_lnk(elem):
-    return Lnk.charspan(elem.get('cfrom', '-1'), elem.get('cto', '-1'))
+    return Lnk.charspan(elem.get(u'cfrom', u'-1'), elem.get(u'cto', u'-1'))
 
 ##############################################################################
 ##############################################################################
@@ -156,15 +157,15 @@ def decode_lnk(elem):
 _strict = False
 
 
-def encode(ms, strict=False, encoding='unicode', pretty_print=False):
-    e = etree.Element('dmrs-list')
+def encode(ms, strict=False, encoding=u'unicode', pretty_print=False):
+    e = etree.Element(u'dmrs-list')
     for m in ms:
         e.append(encode_dmrs(m, strict=strict))
     # for now, pretty_print=True is the same as pretty_print='LKB'
-    if pretty_print in ('LKB', 'lkb', 'Lkb', True):
-        lkb_pprint_re = re.compile(r'(<dmrs[^>]+>|</node>|</link>|</dmrs>)')
-        string = str(etree.tostring(e, encoding=encoding))
-        return lkb_pprint_re.sub(r'\1\n', string)
+    if pretty_print in (u'LKB', u'lkb', u'Lkb', True):
+        lkb_pprint_re = re.compile(ur'(<dmrs[^>]+>|</node>|</link>|</dmrs>)')
+        string = unicode(etree.tostring(e, encoding=encoding))
+        return lkb_pprint_re.sub(ur'\1\n', string)
     # pretty_print is only lxml. Look into tostringlist, maybe?
     # return etree.tostring(e, pretty_print=pretty_print, encoding='unicode')
     return etree.tostring(e, encoding=encoding)
@@ -172,18 +173,18 @@ def encode(ms, strict=False, encoding='unicode', pretty_print=False):
 
 def encode_dmrs(m, strict=False):
     _strict = strict
-    attributes = OrderedDict([('cfrom', str(m.cfrom)),
-                              ('cto', str(m.cto))])
+    attributes = OrderedDict([(u'cfrom', unicode(m.cfrom)),
+                              (u'cto', unicode(m.cto))])
     if m.surface is not None:
-        attributes['surface'] = m.surface
+        attributes[u'surface'] = m.surface
     if m.identifier is not None:
-        attributes['ident'] = m.identifier
+        attributes[u'ident'] = m.identifier
     if not _strict and m.index is not None:
         # index corresponds to a variable, so link it to a nodeid
         index_nodeid = m.get_nodeid(m.index)
         if index_nodeid is not None:
-            attributes['index'] = str(index_nodeid)
-    e = etree.Element('dmrs', attrib=attributes)
+            attributes[u'index'] = unicode(index_nodeid)
+    e = etree.Element(u'dmrs', attrib=attributes)
     for node in m.nodes:
         e.append(encode_node(node))
     for link in m.links:
@@ -192,16 +193,16 @@ def encode_dmrs(m, strict=False):
 
 
 def encode_node(node):
-    attributes = OrderedDict([('nodeid', str(node.nodeid)),
-                              ('cfrom', str(node.cfrom)),
-                              ('cto', str(node.cto))])
+    attributes = OrderedDict([(u'nodeid', unicode(node.nodeid)),
+                              (u'cfrom', unicode(node.cfrom)),
+                              (u'cto', unicode(node.cto))])
     if node.surface is not None:
-        attributes['surface'] = node.surface
+        attributes[u'surface'] = node.surface
     if node.base is not None:
-        attributes['base'] = node.base
+        attributes[u'base'] = node.base
     if node.carg is not None:
-        attributes['carg'] = node.carg
-    e = etree.Element('node', attrib=attributes)
+        attributes[u'carg'] = node.carg
+    e = etree.Element(u'node', attrib=attributes)
     e.append(encode_pred(node.pred))
     e.append(encode_sortinfo(node))
     return e
@@ -209,17 +210,17 @@ def encode_node(node):
 
 def encode_pred(pred):
     if pred.type == Pred.GRAMMARPRED:
-        e = etree.Element('gpred')
-        e.text = pred.string.strip('"\'')
+        e = etree.Element(u'gpred')
+        e.text = pred.string.strip(u'"\'')
     elif pred.type in (Pred.REALPRED, Pred.STRINGPRED):
         attributes = {}
         if pred.lemma is not None:
-            attributes['lemma'] = pred.lemma
+            attributes[u'lemma'] = pred.lemma
         if pred.pos is not None:
-            attributes['pos'] = pred.pos
+            attributes[u'pos'] = pred.pos
         if pred.sense is not None:
-            attributes['sense'] = str(pred.sense)
-        e = etree.Element('realpred', attrib=attributes)
+            attributes[u'sense'] = unicode(pred.sense)
+        e = etree.Element(u'realpred', attrib=attributes)
     return e
 
 
@@ -227,23 +228,23 @@ def encode_sortinfo(node):
     attributes = OrderedDict()
     # return empty <sortinfo/> for quantifiers
     if node.pred.pos == QUANTIFIER_SORT:
-        return etree.Element('sortinfo')  # return empty <sortinfo/>
+        return etree.Element(u'sortinfo')  # return empty <sortinfo/>
     if node.sortinfo:
         if not _strict:
             for k, v in node.sortinfo.items():
-                attributes[k.lower()] = str(v)
+                attributes[k.lower()] = unicode(v)
         else:
             pass  # TODO add strict sortinfo
-    e = etree.Element('sortinfo', attrib=attributes or {})
+    e = etree.Element(u'sortinfo', attrib=attributes or {})
     return e
 
 
 def encode_link(link):
-    e = etree.Element('link', attrib={'from': str(link.start),
-                                      'to': str(link.end)})
-    argname = etree.Element('rargname')
+    e = etree.Element(u'link', attrib={u'from': unicode(link.start),
+                                      u'to': unicode(link.end)})
+    argname = etree.Element(u'rargname')
     argname.text = link.argname
-    post = etree.Element('post')
+    post = etree.Element(u'post')
     post.text = link.post
     e.append(argname)
     e.append(post)

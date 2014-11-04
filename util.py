@@ -1,7 +1,7 @@
 # Utility functions for python-delphin
 
 def unique_filename(filename, max_num=999):
-    """
+    u"""
     Returns a unique filename for the filename given by appending a number.
     By default, an exception is raised if the number exceeds 999.
 
@@ -14,6 +14,6 @@ def unique_filename(filename, max_num=999):
     while os.path.exists(new_filename):
         i += 1
         if i > max_num:
-            raise ValueError('Filename extension out of range (%d)' % max_num)
-        new_filename = '.'.join([filename, str(i)])
+            raise ValueError(u'Filename extension out of range (%d)' % max_num)
+        new_filename = u'.'.join([filename, unicode(i)])
     return new_filename

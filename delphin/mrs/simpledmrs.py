@@ -14,6 +14,7 @@ from io import BytesIO
 import re
 from delphin.mrs import (Dmrs, Node, Link, Pred, Lnk)
 from delphin.mrs.config import (QUANTIFIER_SORT, EQ_POST)
+from itertools import imap
 
 
 ##############################################################################
@@ -24,19 +25,19 @@ from delphin.mrs.config import (QUANTIFIER_SORT, EQ_POST)
 def load(fh, single=False):
     ms = decode(fh)
     if single:
-        ms = next(ms)
+        ms = ms.next()
     return ms
 
 
-def loads(s, single=False, encoding='utf-8'):
-    ms = decode(BytesIO(bytes(s, encoding=encoding)))
+def loads(s, single=False, encoding=u'utf-8'):
+    ms = decode(BytesIO(str(s).encode(encoding)))
     if single:
-        ms = next(ms)
+        ms = ms.next()
     return ms
 
 
 def dump(fh, ms, **kwargs):
-    print(dumps(ms, **kwargs), file=fh)
+    print >>fh, dumps(ms, **kwargs)
 
 
 def dumps(ms, single=False, pretty_print=False, **kwargs):
@@ -55,40 +56,40 @@ dumps_one = lambda m, **kwargs: dumps(m, single=True, **kwargs)
 ##############################################################################
 # Decoding
 
-tokenizer = re.compile(r'("[^"\\]*(?:\\.[^"\\]*)*"'
-                       r'|[^\s:#@\[\]<>"]+'
-                       r'|[:#@\[\]<>])')
+tokenizer = re.compile(ur'("[^"\\]*(?:\\.[^"\\]*)*"'
+                       ur'|[^\s:#@\[\]<>"]+'
+                       ur'|[:#@\[\]<>])')
 
 def decode(fh):
-    """Decode a SimpleDmrs-encoded DMRS structure."""
+    u"""Decode a SimpleDmrs-encoded DMRS structure."""
     # (dmrs { ... })*
 
 def decode_dmrs(elem):
     # dmrs { NODES LINKS }
-    return Dmrs(nodes=list(map(decode_node)),
-                links=list(map(decode_link)),
+    return Dmrs(nodes=list(imap(decode_node)),
+                links=list(imap(decode_link)),
                 lnk=None,
                 surface=None,
                 identifier=None)
 
 
 def decode_node(elem):
-    return Node(pred=decode_pred(elem.find('*[1]')),
-                nodeid=elem.get('nodeid'),
-                sortinfo=decode_sortinfo(elem.find('sortinfo')),
+    return Node(pred=decode_pred(elem.find(u'*[1]')),
+                nodeid=elem.get(u'nodeid'),
+                sortinfo=decode_sortinfo(elem.find(u'sortinfo')),
                 lnk=decode_lnk(elem),
-                surface=elem.get('surface'),
-                base=elem.get('base'),
-                carg=elem.get('carg'))
+                surface=elem.get(u'surface'),
+                base=elem.get(u'base'),
+                carg=elem.get(u'carg'))
 
 
 def decode_pred(elem):
-    if elem.tag == 'gpred':
+    if elem.tag == u'gpred':
         return Pred.grammarpred(elem.text)
-    elif elem.tag == 'realpred':
-        return Pred.realpred(elem.get('lemma'),
-                             elem.get('pos'),
-                             elem.get('sense'))
+    elif elem.tag == u'realpred':
+        return Pred.realpred(elem.get(u'lemma'),
+                             elem.get(u'pos'),
+                             elem.get(u'sense'))
 
 
 def decode_sortinfo(elem):
@@ -96,49 +97,49 @@ def decode_sortinfo(elem):
 
 
 def decode_link(elem):
-    return Link(start=elem.get('from'),
-                end=elem.get('to'),
-                argname=elem.find('rargname').text,
-                post=elem.find('post').text)
+    return Link(start=elem.get(u'from'),
+                end=elem.get(u'to'),
+                argname=elem.find(u'rargname').text,
+                post=elem.find(u'post').text)
 
 
 def decode_lnk(elem):
-    return Lnk.charspan(elem.get('cfrom', '-1'), elem.get('cto', '-1'))
+    return Lnk.charspan(elem.get(u'cfrom', u'-1'), elem.get(u'cto', u'-1'))
 
 ##############################################################################
 ##############################################################################
 # Encoding
 
-_graphtype = 'dmrs'
-_graph = '{graphtype} {graphid}{{{dmrsproperties}{nodes}{links}}}'
-_dmrsproperties = ''
-_node = '{indent}{nodeid} [{pred}{lnk}{sortinfo}];'
-_sortinfo = ' {cvarsort} {properties}'
-_link = '{indent}{start}:{pre}/{post} {arrow} {end};'
+_graphtype = u'dmrs'
+_graph = u'{graphtype} {graphid}{{{dmrsproperties}{nodes}{links}}}'
+_dmrsproperties = u''
+_node = u'{indent}{nodeid} [{pred}{lnk}{sortinfo}];'
+_sortinfo = u' {cvarsort} {properties}'
+_link = u'{indent}{start}:{pre}/{post} {arrow} {end};'
 
-def encode(ms, encoding='unicode', indent=2):
-    delim = '\n' if indent is not None else ' '
+def encode(ms, encoding=u'unicode', indent=2):
+    delim = u'\n' if indent is not None else u' '
     return delim.join(encode_dmrs(m, indent=indent) for m in ms)
 
 def encode_dmrs(m, indent=2):
     if indent is not None:
-        delim = '\n'
-        space = ' ' * indent
+        delim = u'\n'
+        space = u' ' * indent
     else:
-        delim = ''
-        space = ' '
+        delim = u''
+        space = u' '
 
     nodes = [
         _node.format(
             indent=space,
             nodeid=n.nodeid,
-            pred=str(n.pred),
-            lnk='' if n.lnk is None else str(n.lnk),
+            pred=unicode(n.pred),
+            lnk=u'' if n.lnk is None else unicode(n.lnk),
             sortinfo=(
-                '' if not n.sortinfo else
+                u'' if not n.sortinfo else
                 _sortinfo.format(
                     cvarsort=n.cvarsort,
-                    properties=' '.join('{}={}'.format(k, v)
+                    properties=u' '.join(u'{}={}'.format(k, v)
                                         for k, v in n.properties.items()),
                 )
             )
@@ -150,12 +151,12 @@ def encode_dmrs(m, indent=2):
         _link.format(
             indent=space,
             start=l.start,
-            pre=l.argname or '',
+            pre=l.argname or u'',
             post=l.post,
-            arrow='->' if l.argname or l.post != EQ_POST else '--',
+            arrow=u'->' if l.argname or l.post != EQ_POST else u'--',
             end=l.end
         )
         for l in m.links
     ]
 
-    return delim.join(['dmrs {'] + nodes + links + ['}'])
+    return delim.join([u'dmrs {'] + nodes + links + [u'}'])

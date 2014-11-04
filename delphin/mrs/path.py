@@ -3,6 +3,8 @@ from collections import deque
 from itertools import product
 from .components import Pred
 from .util import powerset
+from itertools import ifilter
+from itertools import imap
 
 # Something like this:
 #
@@ -33,21 +35,21 @@ from .util import powerset
 # PropName           = "*" | String
 
 # also empty input; check separately
-_path_end_tokens = set([')', ']', '|', '&'])
-_top_vars = set(['LTOP', 'INDEX'])
-_expression_operators = set(['=', 'is'])
-_non_pred_toks = set([':', '/', '%', '^', '~', '@', ')',
-                      '[', ']', '=', '&', '|'])  # '('
+_path_end_tokens = set([u')', u']', u'|', u'&'])
+_top_vars = set([u'LTOP', u'INDEX'])
+_expression_operators = set([u'=', u'is'])
+_non_pred_toks = set([u':', u'/', u'%', u'^', u'~', u'@', u')',
+                      u'[', u']', u'=', u'&', u'|'])  # '('
 
 tokenizer = re.compile(
-    r'\s*("[^"\\]*(?:\\.[^"\\]*)*"|'  # quoted strings
-    r'[^\s*#:/%^~@()\[\]=&|]+|'       # non-breaking characters
-    r'[*#:/%^~@()\[\]=&|])\s*'        # meaningful punctuation
+    ur'\s*("[^"\\]*(?:\\.[^"\\]*)*"|'  # quoted strings
+    ur'[^\s*#:/%^~@()\[\]=&|]+|'       # non-breaking characters
+    ur'[*#:/%^~@()\[\]=&|])\s*'        # meaningful punctuation
 )
 
 
 def tokenize(path):
-    """Split the path into tokens."""
+    u"""Split the path into tokens."""
     return tokenizer.findall(path)
 
 
@@ -60,7 +62,7 @@ def traverse(xmrs, path):
     steps = deque(tokenize(path))
     objs = _traverse_disjunction(xmrs, xmrs, steps, _traverse_pathexpr)
     if steps:
-        raise Exception('Unconsumed MrsPath steps: {}'.format(''.join(steps)))
+        raise Exception(u'Unconsumed MrsPath steps: {}'.format(u''.join(steps)))
     return objs
 
 
@@ -69,7 +71,7 @@ def traverse(xmrs, path):
 # disjoining and conjoining
 def _traverse_disjunction(xmrs, obj, steps, traverser, context=None):
     objs = _traverse_conjunction(xmrs, obj, steps, traverser, context)
-    while steps and steps[0] == '|':
+    while steps and steps[0] == u'|':
         steps.popleft()  # get rid of '|'
         objs.extend(_traverse_conjunction(xmrs, obj, steps, traverser,
                                           context))
@@ -81,7 +83,7 @@ def _traverse_conjunction(xmrs, obj, steps, traverser, context=None):
     # &-ops can fail early, since all must evaluate to True to be
     # used, but we can't short-circuit conjunction unless we know how
     # many steps to remove from the queue, so just parse them for now
-    while steps and steps[0] == '&':
+    while steps and steps[0] == u'&':
         steps.popleft()  # get rid of '&'
         objs2 = traverser(xmrs, obj, steps, context)
         if objs and objs2:
@@ -96,16 +98,16 @@ def _traverse_pathexpr(xmrs, obj, steps, context=None):
     objs = _traverse_path(xmrs, obj, steps, context)
     if steps and steps[0] in _expression_operators:
         values = _traverse_value(xmrs, obj, steps, context)
-        if step == '=':
+        if step == u'=':
             return objs == values
-        elif step == 'is':
+        elif step == u'is':
             raise NotImplementedError
     return objs
 
 
 def _traverse_path(xmrs, obj, steps, context=None):
     # Path = PathGroup | TopPath | EPPath
-    if steps[0] == '(':
+    if steps[0] == u'(':
         return _traverse_pathgroup(xmrs, obj, steps, context=obj)
     elif steps[0].upper() in _top_vars:
         return _traverse_toppath(xmrs, obj, steps, context)
@@ -125,9 +127,9 @@ def _traverse_toppath(xmrs, obj, steps, context=None):
     # TopPath = TopVar (PathOp EPPath)?
     # TopVar = "LTOP" | "INDEX"
     step = steps.popleft().upper()
-    if step == 'LTOP':
+    if step == u'LTOP':
         raise NotImplementedError
-    elif step == 'INDEX':
+    elif step == u'INDEX':
         raise NotImplementedError
 
 
@@ -137,45 +139,45 @@ def _traverse_eppath(xmrs, obj, steps, context=None):
     # NodeIdOrAnchor = NodeId | Anchor
     eps = _traverse_ep(xmrs, obj, steps, context)
 
-    if steps and step[0] == '[':
-        eps = list(filter())
-    if steps and step[0] == '(':
+    if steps and step[0] == u'[':
+        eps = list(ifilter())
+    if steps and step[0] == u'(':
         pass
 
 
 def _traverse_ep(xmrs, obj, steps, context=None):
     step = steps.popleft()
-    if step == '*':
+    if step == u'*':
         eps = xmrs.nodes
-    elif step == '#':
+    elif step == u'#':
         nid = steps.popleft()
         eps = xmrs.select_nodes(nodeid=nid)
     elif Pred.is_valid_pred_string(step, suffix_required=False):
         eps = xmrs.select_nodes(pred=step)
     else:
-        raise Exception("Invalid ep: {}".format(''.join([step] + steps)))
+        raise Exception(u"Invalid ep: {}".format(u''.join([step] + steps)))
 
 
 def _traverse_arg(xmrs, obj, steps):
     pass
-    if step in (')', ']'):
+    if step in (u')', u']'):
         pass
         #    return objs
         #    elif step == '[':
         #    if traverse(xmrs, curobj, steps):
         #        objs.append(curobj)
-    elif step == ':':
+    elif step == u':':
         member = steps[1]
         obj = obj.get_member()
-    elif step == '/':
+    elif step == u'/':
         pass
-    elif step == '%':
+    elif step == u'%':
         pass
-    elif step == '^':
+    elif step == u'^':
         pass
-    elif step == '~':
+    elif step == u'~':
         pass
-    elif step == '':
+    elif step == u'':
         pass
 
 
@@ -195,17 +197,17 @@ class XmrsPath(object):
 
 def explore_paths(xmrs):
     if xmrs.ltop is None:
-        raise Exception('Cannot explore without an LTOP')
+        raise Exception(u'Cannot explore without an LTOP')
     ltop_nodeid = xmrs.find_scope_head(xmrs.ltop)
     return _explore_paths(xmrs, ltop_nodeid, [])
 
 def _explore_paths(xmrs, nodeid, visited):
     args = [tuple([a.argname] + list(get_arg_op_and_target(xmrs, a)))
             for a in xmrs.get_outbound_args(nodeid, allow_unbound=False)]
-    argstr = ('{}' if len(args) == 1 else '({})').format(' & '.join(
-        ':{}{}'.format(name, op) for name, op, tgt in args
+    argstr = (u'{}' if len(args) == 1 else u'({})').format(u' & '.join(
+        u':{}{}'.format(name, op) for name, op, tgt in args
     ))
-    return ['{}{}'.format(str(xmrs.get_ep(nodeid).pred), argstr)]
+    return [u'{}{}'.format(unicode(xmrs.get_ep(nodeid).pred), argstr)]
 
 
 def get_paths(xmrs, **kwargs):
@@ -219,7 +221,7 @@ def get_ep_paths(xmrs, nid, path=None, max_depth=-1, allow_bare_args=False):
     if max_depth == 0:
         raise StopIteration
     pred = xmrs.get_pred(nid)
-    path = '{}{}'.format(path or '', pred.short_form())
+    path = u'{}{}'.format(path or u'', pred.short_form())
     args = xmrs.get_outbound_args(nid, allow_unbound=False)
     for argset in powerset(args):
         numargs = len(argset)
@@ -240,34 +242,34 @@ def get_arg_path_conj(xmrs, args, path=None,
                       allow_bare_args=False):
     # :argpath or (:argpath [& :argpath]*)
     if allow_bare_args:
-        yield join_subpaths(path, [':{}'.format(arg.argname) for arg in args])
+        yield join_subpaths(path, [u':{}'.format(arg.argname) for arg in args])
     # beware of magic below:
     # first, get_subpaths is a function that gets subpaths for an arg
     get_subpaths = lambda x: list(get_arg_paths(xmrs, x, max_depth=max_depth))
     # then map that function on all args, and get all combinations of
     # the subpaths with itertools.product.
-    subpath_sets = product(*list(map(get_subpaths, args)))
-    print(list(subpath_sets))
+    subpath_sets = product(*list(imap(get_subpaths, args)))
+    print list(subpath_sets)
     for subpaths, subpreds in subpath_sets:
-        yield (join_subpaths(path, [':{}'.format(sp) for sp in subpaths]),
+        yield (join_subpaths(path, [u':{}'.format(sp) for sp in subpaths]),
                subpreds)
 
 
-def join_subpaths(basepath, subpaths, joiner=' & '):
+def join_subpaths(basepath, subpaths, joiner=u' & '):
     if len(subpaths) == 1:
-        pathstring = '{}{}'
+        pathstring = u'{}{}'
     elif len(subpaths) > 1:
-        pathstring = '{}({})'
+        pathstring = u'{}({})'
     else:
-        raise ValueError("There must be more than one subpath.")
-    return pathstring.format(basepath or '', joiner.join(subpaths))
+        raise ValueError(u"There must be more than one subpath.")
+    return pathstring.format(basepath or u'', joiner.join(subpaths))
 
 
 def get_arg_paths(xmrs, arg, max_depth=-1):
     op, tgtnid = get_arg_op_and_target(xmrs, arg)
-    yield '{}{}'.format(arg.argname, op)
+    yield u'{}{}'.format(arg.argname, op)
     for eppath in get_ep_paths(xmrs, tgtnid, max_depth=max_depth-1):
-        yield '{}{}{}'.format(arg.argname, op, eppath)
+        yield u'{}{}{}'.format(arg.argname, op, eppath)
 
 
 def get_arg_op_and_target(xmrs, arg):
@@ -275,11 +277,11 @@ def get_arg_op_and_target(xmrs, arg):
     get_label = xmrs.get_label
     if arg.value in xmrs._cv_to_nid:
         tgtnid = xmrs._cv_to_nid[arg.value]
-        op = '%' if get_label(arg.nodeid) == get_label(tgtnid) else '/'
+        op = u'%' if get_label(arg.nodeid) == get_label(tgtnid) else u'/'
     elif arg.value in xmrs._label_to_nids:
         tgtnid = xmrs.find_scope_head(arg.value)
-        op = '^'
+        op = u'^'
     elif arg.value in xmrs._var_to_hcons:
         tgtnid = xmrs.find_scope_head(arg.value)
-        op = '~'
+        op = u'~'
     return op, tgtnid

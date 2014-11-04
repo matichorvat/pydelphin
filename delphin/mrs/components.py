@@ -8,12 +8,13 @@ from .config import (
     HANDLESORT, CVARSORT, ANCHOR_SORT, QUANTIFIER_SORT,
     QEQ
 )
+from itertools import imap
+from itertools import ifilter
 
 # VARIABLES, LNKS, and HOOKS
 
-@total_ordering
 class MrsVariable(object):
-    """An MrsVariable has an id (vid), sort, and sometimes properties.
+    u"""An MrsVariable has an id (vid), sort, and sometimes properties.
 
     MrsVariables combine an integer variable ID (or *vid*)) with a
     string sortal type (*sort*). In MRS and RMRS, variables may be the
@@ -71,7 +72,7 @@ class MrsVariable(object):
 
     @classmethod
     def from_string(cls, varstring):
-        """
+        u"""
         Construct an |MrsVariable| by its string representation.
 
         Args:
@@ -124,26 +125,26 @@ class MrsVariable(object):
             return vid1 < int(vid2)
         except (ValueError, TypeError):
             pass  # not a string... no good output
-        raise ValueError('Cannot compare MrsVariable to {} of type {}'
-                         .format(str(other), type(other)))
+        raise ValueError(u'Cannot compare MrsVariable to {} of type {}'
+                         .format(unicode(other), type(other)))
 
     def __int__(self):
         return self.vid
 
     def __hash__(self):
-        return hash(str(self))
+        return hash(unicode(self))
 
     def __repr__(self):
-        return '<MrsVariable object ({}{}) at {}>'.format(
+        return u'<MrsVariable object ({}{}) at {}>'.format(
             self.sort, self.vid, id(self)
         )
 
     def __str__(self):
-        return '{}{}'.format(str(self.sort), str(self.vid))
+        return u'{}{}'.format(unicode(self.sort), unicode(self.vid))
 
     @property
     def sortinfo(self):
-        """
+        u"""
         Return the properties including a mapping of "cvarsort" to
         the sort of the MrsVariable. Sortinfo is used in DMRS objects,
         which don't have variables, in order to capture the sortal type
@@ -157,17 +158,20 @@ class MrsVariable(object):
     @staticmethod
     def sort_vid_split(vs):
         try:
-            sort, vid = re.match(r'^(\w*\D)(\d+)$', vs).groups()
+            sort, vid = re.match(ur'^(\w*\D)(\d+)$', vs).groups()
             return sort, vid
         except AttributeError:
-            raise ValueError('Invalid variable string: {}'.format(str(vs)))
+            raise ValueError(u'Invalid variable string: {}'.format(unicode(vs)))
 
 
 # I'm not sure this belongs here, but anchors are MrsVariables...
+MrsVariable =  VARIABLES, LNKS, and HOOKS
+
+@total_ordering(MrsVariable)
 class AnchorMixin(object):
     @property
     def anchor(self):
-        """
+        u"""
         The anchor of the |EP|, |Node|, or |Argument| is just the
         nodeid wrapped in an MrsVariable. In |Xmrs| functions, integer
         nodeids are used instead of anchors.
@@ -182,7 +186,7 @@ class AnchorMixin(object):
 
 
 class VarGenerator(object):
-    """Simple class to produce MrsVariables, incrementing the vid for
+    u"""Simple class to produce MrsVariables, incrementing the vid for
        each one."""
 
     def __init__(self, starting_vid=1):
@@ -195,7 +199,7 @@ class VarGenerator(object):
 
 
 class Lnk(object):
-    """
+    u"""
     Lnk objects link predicates to the surface form in one of several
     ways, the most common of which being the character span of the
     original string.
@@ -244,13 +248,13 @@ class Lnk(object):
 
     def __init__(self, data, type):
         if type not in (Lnk.CHARSPAN, Lnk.CHARTSPAN, Lnk.TOKENS, Lnk.EDGE):
-            raise ValueError('Invalid lnk type: {}'.format(type))
+            raise ValueError(u'Invalid lnk type: {}'.format(type))
         self.type = type
         self.data = data
 
     @classmethod
     def charspan(cls, start, end):
-        """
+        u"""
         Create a Lnk object for a character span.
 
         Args:
@@ -261,7 +265,7 @@ class Lnk(object):
 
     @classmethod
     def chartspan(cls, start, end):
-        """
+        u"""
         Create a Lnk object for a chart span.
 
         Args:
@@ -272,17 +276,17 @@ class Lnk(object):
 
     @classmethod
     def tokens(cls, tokens):
-        """
+        u"""
         Create a Lnk object for a token range.
 
         Args:
             tokens: a list of token identifiers
         """
-        return cls(tuple(map(int, tokens)), Lnk.TOKENS)
+        return cls(tuple(imap(int, tokens)), Lnk.TOKENS)
 
     @classmethod
     def edge(cls, edge):
-        """
+        u"""
         Create a Lnk object for an edge (used internally in generation).
 
         Args:
@@ -292,23 +296,23 @@ class Lnk(object):
 
     def __str__(self):
         if self.type == Lnk.CHARSPAN:
-            return '<{}:{}>'.format(self.data[0], self.data[1])
+            return u'<{}:{}>'.format(self.data[0], self.data[1])
         elif self.type == Lnk.CHARTSPAN:
-            return '<{}#{}>'.format(self.data[0], self.data[2])
+            return u'<{}#{}>'.format(self.data[0], self.data[2])
         elif self.type == Lnk.EDGE:
-            return '<@{}>'.format(self.data)
+            return u'<@{}>'.format(self.data)
         elif self.type == Lnk.TOKENS:
-            return '<{}>'.format(' '.join(self.data))
+            return u'<{}>'.format(u' '.join(self.data))
 
     def __repr__(self):
-        return '<Lnk object {} at {}>'.format(str(self), id(self))
+        return u'<Lnk object {} at {}>'.format(unicode(self), id(self))
 
     def __eq__(self, other):
         return self.type == other.type and self.data == other.data
 
 
 class LnkMixin(object):
-    """
+    u"""
     A mixin class for predications (|EPs| or |Nodes|) or full |Xmrs|
     objects, which are the types that can be linked to surface strings.
     This class provides the :py:attr:`~delphin.mrs.lnk.LnkMixin.cfrom`
@@ -318,7 +322,7 @@ class LnkMixin(object):
     """
     @property
     def cfrom(self):
-        """
+        u"""
         The initial character position in the surface string. Defaults
         to -1 if there is no valid cfrom value.
         """
@@ -332,7 +336,7 @@ class LnkMixin(object):
 
     @property
     def cto(self):
-        """
+        u"""
         The final character position in the surface string. Defaults
         to -1 if there is no valid cto value.
         """
@@ -346,7 +350,7 @@ class LnkMixin(object):
 
 
 class Hook(object):
-    """
+    u"""
     A container class for TOP, INDEX, and XARG.
 
     This class simply encapsulates three variables associated with an
@@ -364,7 +368,7 @@ class Hook(object):
         self.xarg = xarg
 
     def __repr__(self):
-        return '<Hook object (top={} index={} xarg={}) at {}>'.format(
+        return u'<Hook object (top={} index={} xarg={}) at {}>'.format(
             self.top, self.index, self.xarg, id(self)
         )
 
@@ -390,7 +394,7 @@ class Hook(object):
 # ARGUMENTS, LINKS, and CONSTRAINTS
 
 class Argument(AnchorMixin):
-    """
+    u"""
     An argument of an \*MRS predicate.
 
     Args:
@@ -413,7 +417,7 @@ class Argument(AnchorMixin):
         self._type = None
 
     def __repr__(self):
-        return '<Argument object ({}:{}:{}) at {}>'.format(
+        return u'<Argument object ({}:{}:{}) at {}>'.format(
             self.nodeid, self.argname, self.value, id(self)
         )
 
@@ -467,7 +471,7 @@ class Argument(AnchorMixin):
 
 
 class Link(object):
-    """DMRS-style Links are a way of representing arguments without
+    u"""DMRS-style Links are a way of representing arguments without
        variables. A Link encodes a start and end node, the argument
        name, and label information (e.g. label equality, qeq, etc)."""
     def __init__(self, start, end, argname=None, post=None):
@@ -477,13 +481,13 @@ class Link(object):
         self.post = post
 
     def __repr__(self):
-        return '<Link object ({}:{}/{} -> {}) at {}>'.format(
+        return u'<Link object ({}:{}/{} -> {}) at {}>'.format(
             self.start, self.argname, self.post, self.end, id(self)
         )
 
 
 class HandleConstraint(object):
-    """A relation between two handles."""
+    u"""A relation between two handles."""
 
     def __init__(self, hi, relation, lo):
         self.hi = hi
@@ -503,18 +507,18 @@ class HandleConstraint(object):
         return hash(repr(self))
 
     def __repr__(self):
-        return '<HandleConstraint object ({} {} {}) at {}>'.format(
-               str(self.hi), self.relation, str(self.lo), id(self)
+        return u'<HandleConstraint object ({} {} {}) at {}>'.format(
+               unicode(self.hi), self.relation, unicode(self.lo), id(self)
         )
 
-IndividualConstraint = namedtuple('IndividualConstraint',
-                                  ['target', 'relation', 'clause'])
+IndividualConstraint = namedtuple(u'IndividualConstraint',
+                                  [u'target', u'relation', u'clause'])
 
 # PREDICATES AND PREDICATIONS
 
 
 class Pred(object):
-    """
+    u"""
     A semantic predicate.
 
     Args:
@@ -565,10 +569,10 @@ class Pred(object):
         False
     """
     pred_re = re.compile(
-        r'_?(?P<lemma>.*?)_'  # match until last 1 or 2 parts
-        r'((?P<pos>[a-z])_)?'  # pos is always only 1 char
-        r'((?P<sense>([^_\\]|(?:\\.))+)_)?'  # no unescaped _s
-        r'(?P<end>rel(ation)?)$',  # NB only _rel is valid
+        ur'_?(?P<lemma>.*?)_'  # match until last 1 or 2 parts
+        ur'((?P<pos>[a-z])_)?'  # pos is always only 1 char
+        ur'((?P<sense>([^_\\]|(?:\\.))+)_)?'  # no unescaped _s
+        ur'(?P<end>rel(ation)?)$',  # NB only _rel is valid
         re.IGNORECASE
     )
     # Pred types (used mainly in input/output, not internally in pyDelphin)
@@ -577,7 +581,7 @@ class Pred(object):
     STRINGPRED = 2  # quoted string form of realpred
 
     def __init__(self, predtype, lemma=None, pos=None, sense=None):
-        """Extract the lemma, pos, and sense (if applicable) from a pred
+        u"""Extract the lemma, pos, and sense (if applicable) from a pred
            string, if given, or construct a pred string from those
            components, if they are given. Treat malformed pred strings
            as simple preds without extracting the components."""
@@ -589,38 +593,38 @@ class Pred(object):
         self.type = predtype
         self.lemma = lemma
         self.pos = pos
-        self.sense = str(sense) if sense is not None else sense
+        self.sense = unicode(sense) if sense is not None else sense
         self.string = None  # set by class methods
 
     def __eq__(self, other):
 
         if isinstance(other, Pred):
             other = other.string
-        return self.string.strip('"\'') == other.strip('"\'')
+        return self.string.strip(u'"\'') == other.strip(u'"\'')
 
     def __repr__(self):
-        return '<Pred object {} at {}>'.format(self.string, id(self))
+        return u'<Pred object {} at {}>'.format(self.string, id(self))
 
     def __hash__(self):
         return hash(self.string)
 
     @classmethod
     def stringpred(cls, predstr):
-        lemma, pos, sense, end = Pred.split_pred_string(predstr.strip('"\''))
+        lemma, pos, sense, end = Pred.split_pred_string(predstr.strip(u'"\''))
         pred = cls(Pred.STRINGPRED, lemma=lemma, pos=pos, sense=sense)
         pred.string = predstr
         return pred
 
     @classmethod
     def grammarpred(cls, predstr):
-        lemma, pos, sense, end = Pred.split_pred_string(predstr.strip('"\''))
+        lemma, pos, sense, end = Pred.split_pred_string(predstr.strip(u'"\''))
         pred = cls(Pred.GRAMMARPRED, lemma=lemma, pos=pos, sense=sense)
         pred.string = predstr
         return pred
 
     @staticmethod
     def string_or_grammar_pred(predstr):
-        if predstr.strip('"').lstrip("'").startswith('_'):
+        if predstr.strip(u'"').lstrip(u"'").startswith(u'_'):
             return Pred.stringpred(predstr)
         else:
             return Pred.grammarpred(predstr)
@@ -628,13 +632,13 @@ class Pred(object):
     @classmethod
     def realpred(cls, lemma, pos, sense=None):
         pred = cls(Pred.REALPRED, lemma=lemma, pos=pos, sense=sense)
-        string_tokens = list(filter(bool, [lemma, pos, str(sense or '')]))
-        pred.string = '_'.join([''] + string_tokens + ['rel'])
+        string_tokens = list(ifilter(bool, [lemma, pos, unicode(sense or u'')]))
+        pred.string = u'_'.join([u''] + string_tokens + [u'rel'])
         return pred
 
     @staticmethod
     def split_pred_string(predstr):
-        """
+        u"""
         Extract the components from a pred string and log errors for any
         malformedness.
 
@@ -648,53 +652,53 @@ class Pred(object):
             >>> Pred.split_pred_string('quant_rel')
             ('quant', None, None, 'rel')
         """
-        if not predstr.lower().endswith('_rel'):
-            logging.debug('Predicate does not end in "_rel": {}'
+        if not predstr.lower().endswith(u'_rel'):
+            logging.debug(u'Predicate does not end in "_rel": {}'
                           .format(predstr))
         match = Pred.pred_re.search(predstr)
         if match is None:
-            logging.debug('Unexpected predicate string: {}'.format(predstr))
+            logging.debug(u'Unexpected predicate string: {}'.format(predstr))
             return (predstr, None, None, None)
         # _lemma_pos(_sense)?_end
-        return (match.group('lemma'), match.group('pos'),
-                match.group('sense'), match.group('end'))
+        return (match.group(u'lemma'), match.group(u'pos'),
+                match.group(u'sense'), match.group(u'end'))
 
     @staticmethod
     def is_valid_pred_string(predstr, suffix_required=True):
-        """
+        u"""
         Return True if the given predicate string represents a valid
         Pred, False otherwise. If suffix_required is False,
         abbreviated Pred strings will be accepted (e.g. _dog_n_1
         instead of _dog_n_1_rel)
         """
-        predstr = predstr.strip('"').lstrip("'")
+        predstr = predstr.strip(u'"').lstrip(u"'")
         if (not suffix_required and
-            predstr.rsplit('_', 1)[-1] not in ('rel', 'relation')):
-            predstr += '_rel'
+            predstr.rsplit(u'_', 1)[-1] not in (u'rel', u'relation')):
+            predstr += u'_rel'
         return Pred.pred_re.match(predstr) is not None
 
     @staticmethod
     def normalize_pred_string(predstr):
-        """
+        u"""
         Make pred strings more consistent by removing quotes and using
         the _rel suffix.
         """
-        predstr = predstr.strip('"').lstrip("'")
+        predstr = predstr.strip(u'"').lstrip(u"'")
         match = (Pred.pred_re.match(predstr) or
-                 Pred.pred_re.match(predstr + '_rel'))
+                 Pred.pred_re.match(predstr + u'_rel'))
         if match:
             d = match.groupdict()
-            tokens = [d['lemma']]
-            if d['pos']:
-                tokens.append(d['pos'])
-            if d['sense']:
-                tokens.append(d['sense'])
-            tokens.append('rel')
-            return '_'.join(tokens)
+            tokens = [d[u'lemma']]
+            if d[u'pos']:
+                tokens.append(d[u'pos'])
+            if d[u'sense']:
+                tokens.append(d[u'sense'])
+            tokens.append(u'rel')
+            return u'_'.join(tokens)
         return None
 
     def short_form(self):
-        """
+        u"""
         Return the pred string without quotes or a _rel suffix.
 
         Example:
@@ -703,15 +707,14 @@ class Pred(object):
             >>> p.short_form()
             '_cat_n_1'
         """
-        return self.string.strip('"').lstrip("'").rsplit('_', 1)[0]
+        return self.string.strip(u'"').lstrip(u"'").rsplit(u'_', 1)[0]
 
     def is_quantifier(self):
         return self.pos == QUANTIFIER_SORT
 
 
-@total_ordering
 class Node(LnkMixin):
-    """
+    u"""
     A very simple predication for DMRSs. Nodes don't have |Arguments|
     or labels like |EPs|, but they do have a
     :py:attr:`~delphin.mrs.node.Node.carg` property for constant
@@ -742,8 +745,8 @@ class Node(LnkMixin):
         self.get_property = self.sortinfo.get
 
     def __repr__(self):
-        return '<Node object ({} [{}{}]) at {}>'.format(
-            self.nodeid, self.pred.string, str(self.lnk), id(self)
+        return u'<Node object ({} [{}{}]) at {}>'.format(
+            self.nodeid, self.pred.string, unicode(self.lnk), id(self)
         )
 
     def __eq__(self, other):
@@ -771,7 +774,7 @@ class Node(LnkMixin):
 
     @property
     def cvarsort(self):
-        """
+        u"""
         The sortal type of the predicate.
         """
         return self.sortinfo.get(CVARSORT)
@@ -782,7 +785,7 @@ class Node(LnkMixin):
 
     @property
     def properties(self):
-        """
+        u"""
         The properties of the Node (without `cvarsort`, so it's the set
         of properties a corresponding |EP| would have).
         """
@@ -790,15 +793,15 @@ class Node(LnkMixin):
                            if k != CVARSORT)
 
     def is_quantifier(self):
-        """
+        u"""
         Return True if the Node is a quantifier, or False otherwise.
         """
         return self.pred.is_quantifier()
 
 
-@total_ordering
+Node = total_ordering(Node)
 class ElementaryPredication(LnkMixin, AnchorMixin):
-    """
+    u"""
     An elementary predication (EP) combines a predicate with various
     structural semantic properties.
 
@@ -846,8 +849,8 @@ class ElementaryPredication(LnkMixin, AnchorMixin):
         return ep
 
     def __repr__(self):
-        return '<ElementaryPredication object ({} ({})) at {}>'.format(
-            self.pred.string, str(self.iv or '?'), id(self)
+        return u'<ElementaryPredication object ({} ({})) at {}>'.format(
+            self.pred.string, unicode(self.iv or u'?'), id(self)
         )
 
     def __eq__(self, other):
@@ -952,14 +955,16 @@ class ElementaryPredication(LnkMixin, AnchorMixin):
             arg.nodeid = self.nodeid
         elif arg.nodeid != self.nodeid:
             raise XmrsStructureError(
-                "Argument's nodeid must match the EP's (or be None)."
+                u"Argument's nodeid must match the EP's (or be None)."
             )
         if arg.argname in self.argdict:
             raise XmrsStructureError(
-                "Argument with role {} already exists in the EP."
+                u"Argument with role {} already exists in the EP."
                 .format(arg.argname)
             )
         self.argdict[arg.argname] = arg
 
     def is_quantifier(self):
         return self.pred.is_quantifier()
+
+ElementaryPredication = total_ordering(ElementaryPredication)

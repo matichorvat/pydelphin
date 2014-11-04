@@ -26,17 +26,23 @@ class TdlError(PyDelphinException):
     pass
 
 class TdlParsingError(TdlError):
-    def __init__(self, *args, filename=None, line_number=None, identifier=None,
+    def __init__(self, *args,
                  **kwargs):
+        if 'identifier' in kwargs: identifier = kwargs['identifier']; del kwargs['identifier']
+        else: identifier = None
+        if 'line_number' in kwargs: line_number = kwargs['line_number']; del kwargs['line_number']
+        else: line_number = None
+        if 'filename' in kwargs: filename = kwargs['filename']; del kwargs['filename']
+        else: filename = None
         TdlError.__init__(self, *args, **kwargs)
         self.filename = filename
         self.line_number = line_number
         self.identifier = identifier
 
     def __str__(self):
-        return 'At {}:{} ({})\n{}'.format(
-            self.filename or '?',
-            self.line_number or '?',
-            self.identifier or 'type/rule definition',
+        return u'At {}:{} ({})\n{}'.format(
+            self.filename or u'?',
+            self.line_number or u'?',
+            self.identifier or u'type/rule definition',
             TdlError.__str__(self)
         )

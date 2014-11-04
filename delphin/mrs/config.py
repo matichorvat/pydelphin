@@ -6,23 +6,23 @@
 LTOP_NODEID    = 0
 FIRST_NODEID   = 10000 # the nodeid assigned to the first node
 # sortal values
-UNKNOWNSORT    = 'u' # when nothing is known about the sort
-HANDLESORT     = 'h' # for scopal relations
-QUANTIFIER_SORT= 'q' # for quantifier preds
+UNKNOWNSORT    = u'u' # when nothing is known about the sort
+HANDLESORT     = u'h' # for scopal relations
+QUANTIFIER_SORT= u'q' # for quantifier preds
 # HCONS
-QEQ            = 'qeq'
-LHEQ           = 'lheq'
-OUTSCOPES      = 'outscopes'
+QEQ            = u'qeq'
+LHEQ           = u'lheq'
+OUTSCOPES      = u'outscopes'
 # MRS strings
-IVARG_ROLE     = 'ARG0'
-CONSTARG_ROLE  = 'CARG'
+IVARG_ROLE     = u'ARG0'
+CONSTARG_ROLE  = u'CARG'
 # RMRS strings
 ANCHOR_SORT    = HANDLESORT # LKB output is like h10001, but in papers it's a1
 # DMRS strings
-RSTR_ROLE      = 'RSTR' # DMRS establishes that quantifiers have a RSTR link
-EQ_POST        = 'EQ'
-HEQ_POST       = 'HEQ'
-NEQ_POST       = 'NEQ'
-H_POST         = 'H'
-NIL_POST       = 'NIL'
-CVARSORT       = 'cvarsort'
+RSTR_ROLE      = u'RSTR' # DMRS establishes that quantifiers have a RSTR link
+EQ_POST        = u'EQ'
+HEQ_POST       = u'HEQ'
+NEQ_POST       = u'NEQ'
+H_POST         = u'H'
+NIL_POST       = u'NIL'
+CVARSORT       = u'cvarsort'

@@ -1,6 +1,7 @@
 
-"""ACE interface"""
+u"""ACE interface"""
 
+from __future__ import with_statement
 import logging
 from subprocess import (check_call, CalledProcessError, Popen, PIPE, STDOUT)
 
@@ -11,12 +12,12 @@ class AceProcess(object):
     def __init__(self, grm, cmdargs=None, executable=None, **kwargs):
         self.grm = grm
         self.cmdargs = cmdargs or []
-        self.executable = executable or 'ace'
+        self.executable = executable or u'ace'
         self._open()
 
     def _open(self):
         self._p = Popen(
-            [self.executable, '-g', self.grm] + self._cmdargs + self.cmdargs,
+            [self.executable, u'-g', self.grm] + self._cmdargs + self.cmdargs,
             stdin=PIPE,
             stdout=PIPE,
             stderr=STDOUT,
@@ -31,7 +32,7 @@ class AceProcess(object):
         return False  # don't try to handle any exceptions
 
     def send(self, datum):
-        self._p.stdin.write(datum.rstrip() + '\n')
+        self._p.stdin.write(datum.rstrip() + u'\n')
         self._p.stdin.flush()
 
     def receive(self):
@@ -48,7 +49,7 @@ class AceProcess(object):
     def close(self):
         self._p.stdin.close()
         for line in self._p.stdout:
-            logging.debug('ACE cleanup: {}'.format(line.rstrip()))
+            logging.debug(u'ACE cleanup: {}'.format(line.rstrip()))
         retval = self._p.wait()
         return retval
 
@@ -57,11 +58,11 @@ class AceParser(AceProcess):
 
     def receive(self):
         response = {
-            'NOTES': [],
-            'WARNINGS': [],
-            'ERRORS': [],
-            'SENT': None,
-            'RESULTS': []
+            u'NOTES': [],
+            u'WARNINGS': [],
+            u'ERRORS': [],
+            u'SENT': None,
+            u'RESULTS': []
         }
 
         blank = 0
@@ -69,22 +70,22 @@ class AceParser(AceProcess):
         stdout = self._p.stdout
         line = stdout.readline().rstrip()
         while True:
-            if line.strip() == '':
+            if line.strip() == u'':
                 blank += 1
                 if blank >= 2:
                     break
-            elif line.startswith('SENT: ') or line.startswith('SKIP: '):
-                response['SENT'] = line.split(': ', 1)[1]
-            elif (line.startswith('NOTE:') or
-                  line.startswith('WARNING') or
-                  line.startswith('ERROR')):
-                level, message = line.split(': ', 1)
-                response['{}S'.format(level)].append(message)
+            elif line.startswith(u'SENT: ') or line.startswith(u'SKIP: '):
+                response[u'SENT'] = line.split(u': ', 1)[1]
+            elif (line.startswith(u'NOTE:') or
+                  line.startswith(u'WARNING') or
+                  line.startswith(u'ERROR')):
+                level, message = line.split(u': ', 1)
+                response[u'{}S'.format(level)].append(message)
             else:
-                mrs, deriv = line.split(' ; ')
-                response['RESULTS'].append({
-                    'MRS': mrs.strip(),
-                    'DERIV': deriv.strip()
+                mrs, deriv = line.split(u' ; ')
+                response[u'RESULTS'].append({
+                    u'MRS': mrs.strip(),
+                    u'DERIV': deriv.strip()
                 })
             line = stdout.readline().rstrip()
         return response
@@ -92,32 +93,32 @@ class AceParser(AceProcess):
 
 class AceGenerator(AceProcess):
 
-    _cmdargs = ['-e']
+    _cmdargs = [u'-e']
 
     def receive(self):
         response = {
-            'NOTE': None,
-            'WARNING': None,
-            'ERROR': None,
-            'SENT': None,
-            'RESULTS': None
+            u'NOTE': None,
+            u'WARNING': None,
+            u'ERROR': None,
+            u'SENT': None,
+            u'RESULTS': None
         }
         results = []
 
         stdout = self._p.stdout
         line = stdout.readline().rstrip()
-        while not line.startswith('NOTE: '):
-            if line.startswith('WARNING') or line.startswith('ERROR'):
-                level, message = line.split(': ', 1)
+        while not line.startswith(u'NOTE: '):
+            if line.startswith(u'WARNING') or line.startswith(u'ERROR'):
+                level, message = line.split(u': ', 1)
                 response[level] = message
             else:
                 results.append(line)
             line = stdout.readline().rstrip()
         # sometimes error messages aren't prefixed with ERROR
-        if line.endswith('[0 results]') and len(results) > 0:
-            response['ERROR'] = '\n'.join(results)
+        if line.endswith(u'[0 results]') and len(results) > 0:
+            response[u'ERROR'] = u'\n'.join(results)
             results = []
-        response['RESULTS'] = results
+        response[u'RESULTS'] = results
         return response
 
 
@@ -125,13 +126,13 @@ def compile(cfg_path, out_path, log=None):
     #debug('Compiling grammar at {}'.format(abspath(cfg_path)), log)
     try:
         check_call(
-            ['ace', '-g', cfg_path, '-G', out_path],
+            [u'ace', u'-g', cfg_path, u'-G', out_path],
             stdout=log, stderr=log, close_fds=True
         )
     except (CalledProcessError, OSError):
         logging.error(
-            'Failed to compile grammar with ACE. See {}'
-            .format(abspath(log.name) if log is not None else '<stderr>')
+            u'Failed to compile grammar with ACE. See {}'
+            .format(abspath(log.name) if log is not None else u'<stderr>')
         )
         raise
     #debug('Compiled grammar written to {}'.format(abspath(out_path)), log)
@@ -144,7 +145,7 @@ def parse_from_iterable(dat_file, data, **kwargs):
 
 
 def parse(dat_file, datum, **kwargs):
-    return next(parse_from_iterable(dat_file, [datum], **kwargs))
+    return parse_from_iterable(dat_file, [datum], **kwargs).next()
 
 
 def generate_from_iterable(dat_file, data, **kwargs):
@@ -154,7 +155,7 @@ def generate_from_iterable(dat_file, data, **kwargs):
 
 
 def generate(dat_file, datum, **kwargs):
-    return next(generate_from_iterable(dat_file, [datum], **kwargs))
+    return generate_from_iterable(dat_file, [datum], **kwargs).next()
 
 
 # def do(cmd):

@@ -2,15 +2,16 @@ import re
 from collections import deque, defaultdict
 from itertools import chain
 from delphin._exceptions import TdlError, TdlParsingError
+from io import open
 
-_list_head = 'FIRST'
-_list_tail = 'REST'
-_diff_list_list = 'LIST'
-_diff_list_last = 'LAST'
+_list_head = u'FIRST'
+_list_tail = u'REST'
+_diff_list_list = u'LIST'
+_diff_list_last = u'LAST'
 
 class TdlDefinition(object):
 
-    __slots__ = ['supertypes', '_avm']
+    __slots__ = [u'supertypes', u'_avm']
 
     def __init__(self, supertypes=None, features=None):
         self.supertypes = list(supertypes or [])
@@ -21,15 +22,15 @@ class TdlDefinition(object):
             self[feat] = val
 
     def __repr__(self):
-        stlist = ' & '.join(self.supertypes)
-        return '<TdlDefinition object{} at {}>'.format(
-            '' if not self.supertypes else ' ({})'.format(stlist),
+        stlist = u' & '.join(self.supertypes)
+        return u'<TdlDefinition object{} at {}>'.format(
+            u'' if not self.supertypes else u' ({})'.format(stlist),
             id(self)
         )
 
     def __setitem__(self, key, val):
         try:
-            first, rest = key.split('.', 1)
+            first, rest = key.split(u'.', 1)
         except ValueError:
             self._avm[key.upper()] = val
         else:
@@ -42,7 +43,7 @@ class TdlDefinition(object):
 
     def __getitem__(self, key):
         try:
-            first, rest = key.split('.', 1)
+            first, rest = key.split(u'.', 1)
         except ValueError:
             return self._avm[key.upper()]
         else:
@@ -55,7 +56,7 @@ class TdlDefinition(object):
                     yield (feat, val)
                 else:
                     for subfeat, subval in val.features():
-                        yield ('{}.{}'.format(feat, subfeat), subval)
+                        yield (u'{}.{}'.format(feat, subfeat), subval)
             except AttributeError:
                 yield (feat, val)
 
@@ -66,7 +67,7 @@ class TdlDefinition(object):
                     yield (feat, val)
                 else:
                     for subfeat, subval in val.features():
-                        yield ('{}.{}'.format(feat, subfeat), subval)
+                        yield (u'{}.{}'.format(feat, subfeat), subval)
             except AttributeError:
                 yield (feat, val)
 
@@ -88,10 +89,10 @@ class TdlType(TdlDefinition):
         return self
 
     def __repr__(self):
-        stlist = ' & '.join(self.supertypes)
-        return "<TdlType object '{}'{} at {}>".format(
+        stlist = u' & '.join(self.supertypes)
+        return u"<TdlType object '{}'{} at {}>".format(
             self.identifier,
-            '' if not self.supertypes else ' ({})'.format(stlist),
+            u'' if not self.supertypes else u' ({})'.format(stlist),
             id(self)
         )
 
@@ -102,23 +103,23 @@ class TdlInflRule(TdlType):
         self.affix = affix
 
 
-break_characters = r'<>!=:.#&,[];$()^/'
+break_characters = ur'<>!=:.#&,[];$()^/'
 
 tdl_re = re.compile(
-    r'("[^"\\]*(?:\\.[^"\\]*)*"'  # double-quoted "strings"
-    r"|'[^ \\]*(?:\\.[^ \\]*)*"  # single-quoted 'strings
-    r'|[^\s{break_characters}]+'  # terms w/o break chars
-    r'|#[^\s{break_characters}]+'  # coreferences
-    r'|!\w'  # character classes
-    r'|:=|:\+|:<|<!|!>|\.\.\.'  # special punctuation constructs
-    r'|[{break_characters}])'  # break characters
+    ur'("[^"\\]*(?:\\.[^"\\]*)*"'  # double-quoted "strings"
+    ur"|'[^ \\]*(?:\\.[^ \\]*)*"  # single-quoted 'strings
+    ur'|[^\s{break_characters}]+'  # terms w/o break chars
+    ur'|#[^\s{break_characters}]+'  # coreferences
+    ur'|!\w'  # character classes
+    ur'|:=|:\+|:<|<!|!>|\.\.\.'  # special punctuation constructs
+    ur'|[{break_characters}])'  # break characters
     .format(break_characters=re.escape(break_characters)),
     re.MULTILINE
 )
 
 # both ;comments and #|comments|#
-tdl_start_comment_re = re.compile(r'^\s*;|^\s*#\|')
-tdl_end_comment_re = re.compile(r'.*#\|\s*$')
+tdl_start_comment_re = re.compile(ur'^\s*;|^\s*#\|')
+tdl_end_comment_re = re.compile(ur'.*#\|\s*$')
 
 
 def tokenize(s):
@@ -126,7 +127,7 @@ def tokenize(s):
 
 
 def lex(stream):
-    """
+    u"""
     Yield (line_no, event, obj)
     """
     lines = enumerate(stream)
@@ -134,29 +135,29 @@ def lex(stream):
     try:
         while True:
             block = None
-            line_no, line = next(lines)
-            if re.match(r'^\s*;', line):
-                yield (line_no + 1, 'LINECOMMENT', line)
-            elif re.match(r'^\s*#\|', line):
+            line_no, line = lines.next()
+            if re.match(ur'^\s*;', line):
+                yield (line_no + 1, u'LINECOMMENT', line)
+            elif re.match(ur'^\s*#\|', line):
                 block = []
-                while not re.match(r'.*\|#\s*$', line):
+                while not re.match(ur'.*\|#\s*$', line):
                     block.append(line)
-                    _, line = next(lines)
+                    _, line = lines.next()
                 block.append(line)  # also add the last match
-                yield (line_no + 1, 'BLOCKCOMMENT', ''.join(block))
-            elif re.match(r'^\s*$', line):
+                yield (line_no + 1, u'BLOCKCOMMENT', u''.join(block))
+            elif re.match(ur'^\s*$', line):
                 continue
-            elif re.match(r'^\s*%', line):
-                block = _read_block('(', ')', line, lines)
-                yield (line_no + 1, 'LETTERSET', block)
+            elif re.match(ur'^\s*%', line):
+                block = _read_block(u'(', u')', line, lines)
+                yield (line_no + 1, u'LETTERSET', block)
             else:
-                block = _read_block('[', ']', line, lines, terminator='.')
-                yield (line_no + 1, 'TYPEDEF', block)
+                block = _read_block(u'[', u']', line, lines, terminator=u'.')
+                yield (line_no + 1, u'TYPEDEF', block)
 
     except StopIteration:
         if block:
             raise TdlParsingError(
-                'Unexpected termination around line {}.'.format(line_no)
+                u'Unexpected termination around line {}.'.format(line_no)
             )
 
 
@@ -167,7 +168,7 @@ def _read_block(in_pattern, out_pattern, line, lines, terminator=None):
         lvl = _nest_level(in_pattern, out_pattern, tokens)
         while lvl > 0 or (terminator and tokens[-1] != terminator):
             block.extend(tokens)
-            _, line = next(lines)
+            _, line = lines.next()
             tokens = tokenize(line)
             lvl += _nest_level(in_pattern, out_pattern, tokens)
         block.extend(tokens)  # also add the last match
@@ -185,11 +186,11 @@ def parse(f):
     for line_no, event, data in lex(f):
         data = deque(data)
         try:
-            if event == 'TYPEDEF':
+            if event == u'TYPEDEF':
                 yield parse_typedef(data)
-        except TdlParsingError as ex:
+        except TdlParsingError, ex:
             ex.line_number = line_no
-            if hasattr(f, 'name'):
+            if hasattr(f, u'name'):
                 ex.filename = f.name
             raise
 
@@ -205,31 +206,31 @@ def parse_typedef(tokens):
         # Now make coref paths a string instead of list
         corefs = _make_coreferences(corefs)
         #features = parse_conjunction(tokens)
-        assert tokens.popleft() == '.'
+        assert tokens.popleft() == u'.'
         # :+ doesn't need supertypes
-        if assignment != ':+' and len(tdldef.supertypes) == 0:
-            raise TdlParsingError('Type definition requires supertypes.')
+        if assignment != u':+' and len(tdldef.supertypes) == 0:
+            raise TdlParsingError(u'Type definition requires supertypes.')
         t = TdlType.from_tdldef(
             identifier, tdldef, coreferences=corefs, comment=comment
         )
-    except AssertionError as ex:
-        msg = 'Remaining tokens: {}'.format(list(tokens))
+    except AssertionError, ex:
+        msg = u'Remaining tokens: {}'.format(list(tokens))
         raise TdlParsingError(msg, identifier=identifier)
-    except StopIteration as ex:
-        msg = 'Unexpected termination.'
-        raise TdlParsingError(msg, identifier=identifier or '?')
+    except StopIteration, ex:
+        msg = u'Unexpected termination.'
+        raise TdlParsingError(msg, identifier=identifier or u'?')
     return t
 
 
 def parse_affixes(tokens):
     affixes = None
-    if tokens[0] in ('%prefix', '%suffix'):
+    if tokens[0] in (u'%prefix', u'%suffix'):
         affixes = []
         aff = tokens.popleft()
-        while tokens[0] == '(':
+        while tokens[0] == u'(':
             tokens.popleft()  # the '('
             affixes.append(tokens.popleft(), tokens.popleft())
-            assert tokens.popleft() == ')'
+            assert tokens.popleft() == u')'
     return affixes
 
 
@@ -239,14 +240,14 @@ def parse_conjunction(tokens):
     coreferences = []
     comment = None
 
-    tokens.appendleft('&')  # this just makes the loop simpler
-    while tokens[0] == '&':
+    tokens.appendleft(u'&')  # this just makes the loop simpler
+    while tokens[0] == u'&':
 
         tokens.popleft()  # get rid of '&'
         feats = []
         corefs = []
-        if tokens[0] == '.':
-            raise TdlParsingError('"." cannot appear after & in conjunction.')
+        if tokens[0] == u'.':
+            raise TdlParsingError(u'"." cannot appear after & in conjunction.')
 
         # comments can appear after any supertype and before any avm, but let's
         # be a bit more generous and just say they can appear at most once
@@ -257,16 +258,16 @@ def parse_conjunction(tokens):
 
         # comments aren't followed by "&", so pretend nothing happened (i.e.
         # use if, not elif)
-        if tokens[0].startswith('#'):
+        if tokens[0].startswith(u'#'):
             # coreferences don't have features, so just add it and move on
             coreferences.append((tokens.popleft(), [[]]))
             continue
         # other terms may have features or other coreferences
-        elif tokens[0] == '[':
+        elif tokens[0] == u'[':
             feats, corefs = parse_avm(tokens)
-        elif tokens[0] == '<':
+        elif tokens[0] == u'<':
             feats, corefs = parse_cons_list(tokens)
-        elif tokens[0] == '<!':
+        elif tokens[0] == u'<!':
             feats, corefs = parse_diff_list(tokens)
         # strings and other types are caught here
         else:
@@ -291,38 +292,38 @@ def parse_avm(tokens):
     # [ attr-val (, attr-val)* ]
     features = []
     coreferences = []
-    assert tokens.popleft() == '['
-    if tokens[0] != ']':  # non-empty AVM
-        tokens.appendleft(',')  # to make the loop simpler
-    while tokens[0] != ']':
+    assert tokens.popleft() == u'['
+    if tokens[0] != u']':  # non-empty AVM
+        tokens.appendleft(u',')  # to make the loop simpler
+    while tokens[0] != u']':
         tokens.popleft()
         attrval, corefs = parse_attr_val(tokens)
         features.append(attrval)
         coreferences.extend(corefs)
     # '[', '.', '"', '/', '<', '#'
-    assert tokens.popleft() == ']'
+    assert tokens.popleft() == u']'
     return features, coreferences
 
 
 def parse_attr_val(tokens):
     # PATH(.PATH)* val
     path = [tokens.popleft()]
-    while tokens[0] == '.':
+    while tokens[0] == u'.':
         tokens.popleft()
         path.append(tokens.popleft())
-    path = '.'.join(path)  # put it back together (maybe shouldn'ta broke it)
+    path = u'.'.join(path)  # put it back together (maybe shouldn'ta broke it)
     value, corefs, comment = parse_conjunction(tokens)
     corefs = [(c, [[path] + p for p in ps]) for c, ps in corefs]
     return ((path, value), corefs)  # discard comment here, i guess
 
 
 def parse_cons_list(tokens):
-    assert tokens.popleft() == '<'
-    feats, last_path, coreferences = _parse_list(tokens, ('>', '.', '...'))
-    if tokens[0] == '...':  # < ... > or < a, ... >
+    assert tokens.popleft() == u'<'
+    feats, last_path, coreferences = _parse_list(tokens, (u'>', u'.', u'...'))
+    if tokens[0] == u'...':  # < ... > or < a, ... >
         tokens.popleft()
         # do nothing (don't terminate the list)
-    elif tokens[0] == '.':  # e.g. < a . #x >
+    elif tokens[0] == u'.':  # e.g. < a . #x >
         tokens.popleft()
         tdldef, corefs, _ = parse_conjunction(tokens)
         feats.append((last_path, tdldef))
@@ -332,25 +333,25 @@ def parse_cons_list(tokens):
         feats = None  # list is null; nothing can be added
     else:  # < a, b >
         feats.append((last_path, None))  # terminate the list
-    assert tokens.popleft() == '>'
+    assert tokens.popleft() == u'>'
     return (feats, coreferences)
 
 def parse_diff_list(tokens):
-    assert tokens.popleft() == '<!'
-    feats, last_path, coreferences = _parse_list(tokens, ('!>'))
+    assert tokens.popleft() == u'<!'
+    feats, last_path, coreferences = _parse_list(tokens, (u'!>'))
     if not feats:
         # always have the LIST path
         feats.append((_diff_list_list, TdlDefinition()))
         last_path = _diff_list_list
     else:
         # prepend 'LIST' to all paths
-        feats = [('.'.join([_diff_list_list, path]), val)
+        feats = [(u'.'.join([_diff_list_list, path]), val)
                  for path, val in feats]
-        last_path = '{}.{}'.format(_diff_list_list, last_path)
+        last_path = u'{}.{}'.format(_diff_list_list, last_path)
     # always have the LAST path
     feats.append((_diff_list_last, TdlDefinition()))
     coreferences.append((None, [[last_path], [_diff_list_last]]))
-    assert tokens.popleft() == '!>'
+    assert tokens.popleft() == u'!>'
     return (feats, coreferences)
 
 
@@ -363,17 +364,17 @@ def _parse_list(tokens, break_on):
         feats.append((path, tdldef))
         corefs = [(c, [[path] + p for p in ps]) for c, ps in corefs]
         coreferences.extend(corefs)
-        if tokens[0] == ',':
-            path = '{}.{}'.format(_list_tail, path)
+        if tokens[0] == u',':
+            path = u'{}.{}'.format(_list_tail, path)
             tokens.popleft()
-        elif tokens[0] == '.':
+        elif tokens[0] == u'.':
             break
     path = path.replace(_list_head, _list_tail)
     return (feats, path, coreferences)
 
 
 def _make_coreferences(corefs):
-    corefs = [(cr, ['.'.join(p) for p in paths]) for cr, paths in corefs]
+    corefs = [(cr, [u'.'.join(p) for p in paths]) for cr, paths in corefs]
     merged = defaultdict(list)
     unlabeled = []
     # unlabeled ones (e.g. from diff lists) don't have a coref tag, but
@@ -389,15 +390,15 @@ def _make_coreferences(corefs):
     # just check that all have at least two paths
     if not all(len(paths) >= 2 for cr, paths in corefs):
         raise TdlError(
-            'Solitary coreference: {}\n{}'
-            .format(str(cr), repr(paths))
+            u'Solitary coreference: {}\n{}'
+            .format(unicode(cr), repr(paths))
         )
     return corefs
 
 
-if __name__ == '__main__':
+if __name__ == u'__main__':
     import sys
-    for x in parse(open(sys.argv[1], 'r')):
-       print(x)
+    for x in parse(open(sys.argv[1], u'r')):
+       print x
     # for line in sys.stdin:
     #    print(tokenize(line))

@@ -7,131 +7,131 @@ from pygments.token import (
     Comment, Error
 )
 
-tdl_break_characters = re.escape(r'<>!=:.#&,[];$()^/')
+tdl_break_characters = re.escape(ur'<>!=:.#&,[];$()^/')
 
 class TdlLexer(RegexLexer):
-    name = 'TDL'
-    aliases = ['tdl']
-    filenames = ['*.tdl']
+    name = u'TDL'
+    aliases = [u'tdl']
+    filenames = [u'*.tdl']
 
     tokens = {
-        'root': [
-            (r'\s+', Text),
-            include('comment'),
-            (r'(\S+?)(\s*)(:[=<+])', bygroups(Name.Class, Text, Operator),
-             'typedef'),
-            (r'(%)(\s*\(\s*)(letter-set)',
+        u'root': [
+            (ur'\s+', Text),
+            include(u'comment'),
+            (ur'(\S+?)(\s*)(:[=<+])', bygroups(Name.Class, Text, Operator),
+             u'typedef'),
+            (ur'(%)(\s*\(\s*)(letter-set)',
              bygroups(Operator, Punctuation, Name.Builtin),
-             ('letterset', 'letterset')),  # need to pop twice
-            (r':begin', Name.Builtin, 'macro')
+             (u'letterset', u'letterset')),  # need to pop twice
+            (ur':begin', Name.Builtin, u'macro')
         ],
-        'comment': [
-            (r';.*?$', Comment.Singleline),
-            (r'#\|', Comment.Multiline, 'multilinecomment')
+        u'comment': [
+            (ur';.*?$', Comment.Singleline),
+            (ur'#\|', Comment.Multiline, u'multilinecomment')
         ],
-        'multilinecomment': [
-            (r'[^#|]', Comment.Multiline),
-            (r'#\|', Comment.Multiline, '#push'),
-            (r'\|#', Comment.Multiline, '#pop'),
-            (r'[#|]', Comment.Multiline)
+        u'multilinecomment': [
+            (ur'[^#|]', Comment.Multiline),
+            (ur'#\|', Comment.Multiline, u'#push'),
+            (ur'\|#', Comment.Multiline, u'#pop'),
+            (ur'[#|]', Comment.Multiline)
         ],
-        'typedef': [
-            (r'\s+', Text),
-            (r'\.', Punctuation, '#pop'),
+        u'typedef': [
+            (ur'\s+', Text),
+            (ur'\.', Punctuation, u'#pop'),
             # probably ok to reuse letterset for %suffix and %prefix
-            (r'(%prefix|%suffix)', Name.Builtin, 'letterset'),
-            include('conjunction')
+            (ur'(%prefix|%suffix)', Name.Builtin, u'letterset'),
+            include(u'conjunction')
         ],
-        'conjunction': [
-            (r'\s+', Text),
-            (r'&', Operator),
-            (r'"[^"\\]*(?:\\.[^"\\]*)*"', String.Doc),
-            include('term'),
-            (r'', Text, '#pop')
+        u'conjunction': [
+            (ur'\s+', Text),
+            (ur'&', Operator),
+            (ur'"[^"\\]*(?:\\.[^"\\]*)*"', String.Doc),
+            include(u'term'),
+            (ur'', Text, u'#pop')
         ],
-        'term': [
-            include('comment'),
-            (r'\[', Punctuation, 'avm'),
-            (r'<!', Punctuation, 'difflist'),
-            (r'<', Punctuation, 'conslist'),
-            (r'#[^\s{}]+'.format(tdl_break_characters), Name.Label),
-            include('strings'),
-            (r'\*top\*', Keyword.Constant),
-            (r'\.\.\.', Name),
-            (r'[^\s{}]+'.format(tdl_break_characters), Name),
-            (r'', Text, '#pop')
+        u'term': [
+            include(u'comment'),
+            (ur'\[', Punctuation, u'avm'),
+            (ur'<!', Punctuation, u'difflist'),
+            (ur'<', Punctuation, u'conslist'),
+            (ur'#[^\s{}]+'.format(tdl_break_characters), Name.Label),
+            include(u'strings'),
+            (ur'\*top\*', Keyword.Constant),
+            (ur'\.\.\.', Name),
+            (ur'[^\s{}]+'.format(tdl_break_characters), Name),
+            (ur'', Text, u'#pop')
         ],
-        'avm': [
-            include('comment'),
-            (r'\s+', Text),
-            (r'\]', Punctuation, '#pop'),
-            (r',', Punctuation),
-            (r'((?:[^\s{0}]+)(?:\s*\.\s*[^\s{0}]+)*)'
-             .format(tdl_break_characters), Name.Attribute, 'conjunction')
+        u'avm': [
+            include(u'comment'),
+            (ur'\s+', Text),
+            (ur'\]', Punctuation, u'#pop'),
+            (ur',', Punctuation),
+            (ur'((?:[^\s{0}]+)(?:\s*\.\s*[^\s{0}]+)*)'
+             .format(tdl_break_characters), Name.Attribute, u'conjunction')
         ],
-        'conslist': [
-            (r'>', Punctuation, '#pop'),
-            (r',|\.', Punctuation),
-            include('conjunction')
+        u'conslist': [
+            (ur'>', Punctuation, u'#pop'),
+            (ur',|\.', Punctuation),
+            include(u'conjunction')
         ],
-        'difflist': [
-            (r'!>', Punctuation, '#pop'),
-            (r',|\.', Punctuation),
-            include('conjunction')
+        u'difflist': [
+            (ur'!>', Punctuation, u'#pop'),
+            (ur',|\.', Punctuation),
+            include(u'conjunction')
         ],
-        'strings': [
-            (r'"[^"\\]*(?:\\.[^"\\]*)*"', String.Double),
-            (r"'[^ \\]*(?:\\.[^ \\]*)*", String.Single),
-            (r"\^[^ \\]*(?:\\.[^ \\]*)*\$", String.Regex)
+        u'strings': [
+            (ur'"[^"\\]*(?:\\.[^"\\]*)*"', String.Double),
+            (ur"'[^ \\]*(?:\\.[^ \\]*)*", String.Single),
+            (ur"\^[^ \\]*(?:\\.[^ \\]*)*\$", String.Regex)
         ],
-        'letterset': [
-            (r'\(', Punctuation, '#push'),
-            (r'\)|\n', Punctuation, '#pop'),
-            (r'!\w', Name.Variable),
-            (r'\s+', Text),
-            (r'\*', Name.Constant),
-            (r'.', String.Char)
+        u'letterset': [
+            (ur'\(', Punctuation, u'#push'),
+            (ur'\)|\n', Punctuation, u'#pop'),
+            (ur'!\w', Name.Variable),
+            (ur'\s+', Text),
+            (ur'\*', Name.Constant),
+            (ur'.', String.Char)
         ],
-        'macro': [
-            (r'\s+', Text),
-            include('comment'),
-            (r'(:end.*?)(\.)', bygroups(Name.Builtin, Punctuation), '#pop'),
-            (r'(:begin.*?)(\.)', bygroups(Name.Builtin, Punctuation), '#push'),
-            (r':[-\w]+', Name.Builtin),
-            include('strings'),
-            (r'[-\w]+', Name),
-            (r'\.', Punctuation)
+        u'macro': [
+            (ur'\s+', Text),
+            include(u'comment'),
+            (ur'(:end.*?)(\.)', bygroups(Name.Builtin, Punctuation), u'#pop'),
+            (ur'(:begin.*?)(\.)', bygroups(Name.Builtin, Punctuation), u'#push'),
+            (ur':[-\w]+', Name.Builtin),
+            include(u'strings'),
+            (ur'[-\w]+', Name),
+            (ur'\.', Punctuation)
         ]
     }
 
 
 mrs_colorscheme = {
-    Token:              ('',            ''),
+    Token:              (u'',            u''),
 
     #Whitespace:         ('lightgray',   'darkgray'),
     #Comment:            ('lightgray',   'darkgray'),
     #Comment.Preproc:    ('teal',        'turquoise'),
     #Keyword:            ('darkblue',    'blue'),
     #Keyword.Type:       ('teal',        'turquoise'),
-    Operator.Word:      ('__',          '__'),  # HCONS or ICONS relations
-    Name.Builtin:       ('**',          '**'),  # LTOP, RELS, etc
+    Operator.Word:      (u'__',          u'__'),  # HCONS or ICONS relations
+    Name.Builtin:       (u'**',          u'**'),  # LTOP, RELS, etc
     # used for variables
-    Name.Label:         ('brown',       '*yellow*'),  # handles
-    Name.Function:      ('*purple*',    '*fuchsia*'),  # events
-    Name.Variable:      ('*darkblue*',  '*blue*'),  # ref-inds (x)
-    Name.Other:         ('*teal*',      '*turquoise*'),  # underspecified (i, p, u)
+    Name.Label:         (u'brown',       u'*yellow*'),  # handles
+    Name.Function:      (u'*purple*',    u'*fuchsia*'),  # events
+    Name.Variable:      (u'*darkblue*',  u'*blue*'),  # ref-inds (x)
+    Name.Other:         (u'*teal*',      u'*turquoise*'),  # underspecified (i, p, u)
     # role arguments
-    Name.Namespace:     ('__',          '__'),  # LBL
-    Name.Class:         ('__',          '__'),  # ARG0
-    Name.Constant:      ('darkred',     'red'),  # CARG
-    Name.Tag:           ('__',          '__'),  # others
+    Name.Namespace:     (u'__',          u'__'),  # LBL
+    Name.Class:         (u'__',          u'__'),  # ARG0
+    Name.Constant:      (u'darkred',     u'red'),  # CARG
+    Name.Tag:           (u'__',          u'__'),  # others
     #Name.Exception:     ('teal',        'turquoise'),
     #Name.Decorator:     ('darkgray',    'lightgray'),
-    Name.Attribute:     ('darkgray',    'darkgray'),  # variable properties
-    String:             ('brown',       'brown'),
-    String.Symbol:      ('darkgreen',   'green'),
-    String.Other:       ('green',       'darkgreen'),
-    Number:             ('lightgray',   'lightgray'),  # lnk
+    Name.Attribute:     (u'darkgray',    u'darkgray'),  # variable properties
+    String:             (u'brown',       u'brown'),
+    String.Symbol:      (u'darkgreen',   u'green'),
+    String.Other:       (u'green',       u'darkgreen'),
+    Number:             (u'lightgray',   u'lightgray'),  # lnk
 
     # Generic.Deleted:    ('red',        'red'),
     # Generic.Inserted:   ('darkgreen',  'green'),
@@ -139,93 +139,93 @@ mrs_colorscheme = {
     # Generic.Subheading: ('*purple*',   '*fuchsia*'),
     # Generic.Error:      ('red',        'red'),
 
-    Error:              ('_red_',       '_red_'),
+    Error:              (u'_red_',       u'_red_'),
 }
 
 
 class SimpleMrsLexer(RegexLexer):
-    name = 'SimpleMRS'
-    aliases = ['mrs']
-    filenames = ['*.mrs']
+    name = u'SimpleMRS'
+    aliases = [u'mrs']
+    filenames = [u'*.mrs']
 
     tokens = {
-        'root': [
-            (r'\s+', Text),
-            (r'\[|\]', Punctuation, 'mrs')
+        u'root': [
+            (ur'\s+', Text),
+            (ur'\[|\]', Punctuation, u'mrs')
         ],
-        'mrs': [
-            (r'\s+', Text),
-            include('strings'),
-            include('vars'),
-            (r'\]', Punctuation, '#pop'),
-            (r'<', Number, 'lnk'),
-            (r'(TOP|LTOP|INDEX)(\s*)(:)',
+        u'mrs': [
+            (ur'\s+', Text),
+            include(u'strings'),
+            include(u'vars'),
+            (ur'\]', Punctuation, u'#pop'),
+            (ur'<', Number, u'lnk'),
+            (ur'(TOP|LTOP|INDEX)(\s*)(:)',
              bygroups(Name.Builtin, Text, Punctuation)),
-            (r'(RELS|HCONS|ICONS)(\s*)(:)(\s*)(<)',
+            (ur'(RELS|HCONS|ICONS)(\s*)(:)(\s*)(<)',
              bygroups(Name.Builtin, Text, Punctuation, Text, Punctuation),
-             'list'),
+             u'list'),
         ],
-        'strings': [
-            (r'"[^"\\]*(?:\\.[^"\\]*)*"', String.Double),
-            (r"'[^ \\]*(?:\\.[^ \\]*)*", String.Single),
+        u'strings': [
+            (ur'"[^"\\]*(?:\\.[^"\\]*)*"', String.Double),
+            (ur"'[^ \\]*(?:\\.[^ \\]*)*", String.Single),
         ],
-        'vars': [
-            (r'(?:h|handle)\d+', Name.Label),
-            (r'(?:e|event)\d+', Name.Function, 'var'),
-            (r'(?:x|ref-ind)\d+', Name.Variable, 'var'),
-            (r'(?:i|individual|p|non_event|u|semarg)\d+', Name.Other, 'var'),
+        u'vars': [
+            (ur'(?:h|handle)\d+', Name.Label),
+            (ur'(?:e|event)\d+', Name.Function, u'var'),
+            (ur'(?:x|ref-ind)\d+', Name.Variable, u'var'),
+            (ur'(?:i|individual|p|non_event|u|semarg)\d+', Name.Other, u'var'),
         ],
-        'var': [
-            (r'\s+', Text),
-            (r'\[', Punctuation, 'proplist'),
-            (r'', Text, '#pop')
+        u'var': [
+            (ur'\s+', Text),
+            (ur'\[', Punctuation, u'proplist'),
+            (ur'', Text, u'#pop')
         ],
-        'proplist': [
-            (r'\s+', Text),
-            (r'([^:\s]+)(\s*)(:)(\s*)([^\s]+)',
+        u'proplist': [
+            (ur'\s+', Text),
+            (ur'([^:\s]+)(\s*)(:)(\s*)([^\s]+)',
              bygroups(Name.Attribute, Text, Punctuation, Text, Text)),
-            (r'\]', Punctuation, '#pop'),
-            (r'e|event|x|ref-ind', Name.Variable),
-            (r'\w+', Name.Other)
+            (ur'\]', Punctuation, u'#pop'),
+            (ur'e|event|x|ref-ind', Name.Variable),
+            (ur'\w+', Name.Other)
         ],
-        'lnk': [
-            (r'\s+', Text),
-            (r'>', Number, '#pop'),
-            (r'\d+[:#]\d+|@\d+|\d+(?:\s+\d+)*', Number),
+        u'lnk': [
+            (ur'\s+', Text),
+            (ur'>', Number, u'#pop'),
+            (ur'\d+[:#]\d+|@\d+|\d+(?:\s+\d+)*', Number),
         ],
-        'list': [
-            (r'\s+', Text),
-            (r'>', Punctuation, '#pop'),
-            (r'\[', Punctuation, ('ep', 'pred')),
-            include('vars'),
-            (r'qeq|outscopes|lheq|[^\s]+', Operator.Word),
+        u'list': [
+            (ur'\s+', Text),
+            (ur'>', Punctuation, u'#pop'),
+            (ur'\[', Punctuation, (u'ep', u'pred')),
+            include(u'vars'),
+            (ur'qeq|outscopes|lheq|[^\s]+', Operator.Word),
         ],
-        'ep': [
-            (r'\s+', Text),
-            (r'<', Number, 'lnk'),
-            (r'\]', Punctuation, '#pop'),
-            include('strings'),
-            (r'(LBL)(\s*)(:)',
+        u'ep': [
+            (ur'\s+', Text),
+            (ur'<', Number, u'lnk'),
+            (ur'\]', Punctuation, u'#pop'),
+            include(u'strings'),
+            (ur'(LBL)(\s*)(:)',
              bygroups(Name.Namespace, Text, Punctuation)),
-            (r'(ARG0)(\s*)(:)',
+            (ur'(ARG0)(\s*)(:)',
              bygroups(Name.Class, Text, Punctuation)),
-            (r'(CARG)(\s*)(:)',
+            (ur'(CARG)(\s*)(:)',
              bygroups(Name.Constant, Text, Punctuation)),
-            (r'([^:\s]+)(\s*)(:)',
+            (ur'([^:\s]+)(\s*)(:)',
              bygroups(Name.Tag, Text, Punctuation)),
-            include('vars')
+            include(u'vars')
         ],
-        'pred': [
-            (r'\s+', Text),
-            (r'"[^"_\\]*(?:\\.[^"\\]*)*"', String.Symbol, '#pop'),
-            (r"'[^ _\\]*(?:\\.[^ \\]*?)*", String.Symbol, '#pop'),
-            (r'[^ <]+', String.Symbol, '#pop')
+        u'pred': [
+            (ur'\s+', Text),
+            (ur'"[^"_\\]*(?:\\.[^"\\]*)*"', String.Symbol, u'#pop'),
+            (ur"'[^ _\\]*(?:\\.[^ \\]*?)*", String.Symbol, u'#pop'),
+            (ur'[^ <]+', String.Symbol, u'#pop')
         ]
     }
 
     def get_tokens_unprocessed(self, text):
         for index, token, value in RegexLexer.get_tokens_unprocessed(self, text):
-            if token is String.Symbol and '_q_' in value:
+            if token is String.Symbol and u'_q_' in value:
                 yield index, String.Other, value
             else:
                 yield index, token, value

@@ -1,17 +1,19 @@
 from itertools import product
+from itertools import ifilter
+from itertools import imap
 
 # query methods
 def select_nodeids(xmrs, iv=None, label=None, pred=None):
-    """
+    u"""
     Return the list of all nodeids whose respective |EP| has the
     matching *iv* (intrinsic variable), *label*, or *pred* values. If
     none match, return an empty list.
     """
     g = xmrs._graph
     nids = []
-    datamatch = lambda d: ((iv is None or d['iv'] == iv) and
-                           (pred is None or d['pred'] == pred) and
-                           (label is None or d['label'] == label))
+    datamatch = lambda d: ((iv is None or d[u'iv'] == iv) and
+                           (pred is None or d[u'pred'] == pred) and
+                           (label is None or d[u'label'] == label))
     for nid in g.nodeids:
         data = g.node[nid]
         if datamatch(data):
@@ -20,17 +22,17 @@ def select_nodeids(xmrs, iv=None, label=None, pred=None):
 
 
 def select_nodes(xmrs, nodeid=None, pred=None):
-    """
+    u"""
     Return the list of all |Nodes| that have the matching *nodeid*
     and/or *pred* values. If none match, return an empty list.
     """
     nodematch = lambda n: ((nodeid is None or n.nodeid == nodeid) and
                            (pred is None or n.pred == pred))
-    return list(filter(nodematch, xmrs.nodes))
+    return list(ifilter(nodematch, xmrs.nodes))
 
 
 def select_eps(xmrs, anchor=None, iv=None, label=None, pred=None):
-    """
+    u"""
     Return the list of all |EPs| that have the matching *anchor*,
     *iv*, *label*, and or *pred* values. If none match, return an
     empty list.
@@ -39,11 +41,11 @@ def select_eps(xmrs, anchor=None, iv=None, label=None, pred=None):
                          (iv is None or n.iv == iv) and
                          (label is None or n.label == label) and
                          (pred is None or n.pred == pred))
-    return list(filter(epmatch, xmrs.eps))
+    return list(ifilter(epmatch, xmrs.eps))
 
 
 def select_args(xmrs, anchor=None, rargname=None, value=None):
-    """
+    u"""
     Return the list of all |Arguments| that have the matching
     *anchor*, *rargname*, and/or *value* values. If none match,
     return an empty list.
@@ -52,11 +54,11 @@ def select_args(xmrs, anchor=None, rargname=None, value=None):
                           (rargname is None or
                            a.argname.upper() == rargname.upper()) and
                           (value is None or a.value == value))
-    return list(filter(argmatch, xmrs.args))
+    return list(ifilter(argmatch, xmrs.args))
 
 
 def select_links(xmrs, source=None, target=None, rargname=None, post=None):
-    """
+    u"""
     Return the list of all |Links| that have the matching *source*,
     *target*, *rargname*, and/or *post* values. If none match, return
     an empty list.
@@ -66,11 +68,11 @@ def select_links(xmrs, source=None, target=None, rargname=None, post=None):
         (target is None or l.target == target) and
         (rargname is None or l.argname == rargname) and
         (post is None or l.post == post))
-    return list(filter(linkmatch, xmrs.links))
+    return list(ifilter(linkmatch, xmrs.links))
 
 
 def select_hcons(xmrs, hi=None, relation=None, lo=None):
-    """
+    u"""
     Return the list of all |HandleConstraints| that have the matching
     *hi*, *relation*, and/or *lo* values. If none match, return an
     empty list.
@@ -79,11 +81,11 @@ def select_hcons(xmrs, hi=None, relation=None, lo=None):
         (hi is None or hc.hi == hi) and
         (relation is None or hc.relation == relation) and
         (lo is None or hc.lo == lo))
-    return list(filter(hcmatch, xmrs.hcons))
+    return list(ifilter(hcmatch, xmrs.hcons))
 
 
 def select_icons(xmrs, target=None, relation=None, clause=None):
-    """
+    u"""
     Return the list of all |IndividualConstraints| that have the
     matching *target*, *relation*, and/or *clause* values. If none
     match, return an empty list.
@@ -92,11 +94,11 @@ def select_icons(xmrs, target=None, relation=None, clause=None):
         (target is None or ic.target == target) and
         (relation is None or ic.relation == relation) and
         (clause is None or ic.clause == clause))
-    return list(filter(icmatch, xmrs.icons))
+    return list(ifilter(icmatch, xmrs.icons))
 
 
 def find_argument_target(xmrs, nodeid, rargname):
-    """
+    u"""
     Return the target of an argument (rather than just the variable).
 
     Args:
@@ -130,12 +132,12 @@ def find_argument_target(xmrs, nodeid, rargname):
         tgt_attr = g.node[tgt_val]
 
         # intrinsic variable
-        if 'iv' in tgt_attr:
-            tgt = tgt_attr['iv']
+        if u'iv' in tgt_attr:
+            tgt = tgt_attr[u'iv']
 
         # hcons; tgt_val is a hole
-        if 'hcons' in tgt_attr:
-            tgt_val = tgt_attr['hcons'].lo
+        if u'hcons' in tgt_attr:
+            tgt_val = tgt_attr[u'hcons'].lo
         # label or hcons lo variable (see previous if block)
         if tgt_val in g.labels:
             tgt = xmrs.labelset_head(tgt_val)
@@ -152,7 +154,7 @@ def find_argument_target(xmrs, nodeid, rargname):
 
 
 def find_quantifier(xmrs, nodeid):
-    """
+    u"""
     Return the nodeid of the quantifier of the EP given by `nodeid`.
 
     Args:
@@ -167,14 +169,14 @@ def find_quantifier(xmrs, nodeid):
     if (not ep or
         ep.is_quantifier() or
         ep.iv not in xmrs._graph.node or
-        'bv' not in xmrs._graph.node[ep.iv]):
+        u'bv' not in xmrs._graph.node[ep.iv]):
         # in some subgraphs, an IV might not exist even when specified
         return None
-    return xmrs._graph.node[ep.iv]['bv']
+    return xmrs._graph.node[ep.iv][u'bv']
 
 
 def get_outbound_args(xmrs, nodeid, allow_unbound=True):
-    """
+    u"""
     Yield the |Arguments| of `nodeid` that point to other EPs/nodes.
 
     Args:
@@ -192,15 +194,15 @@ def get_outbound_args(xmrs, nodeid, allow_unbound=True):
         tgt = arg.value
         data = g.node.get(tgt, {})
         # ignore intrinsic arguments
-        if data.get('iv') == nid or data.get('bv') == nid:
+        if data.get(u'iv') == nid or data.get(u'bv') == nid:
             continue
-        is_outbound = 'iv' in data or 'hcons' in data or tgt in g.labels
+        is_outbound = u'iv' in data or u'hcons' in data or tgt in g.labels
         if (allow_unbound or is_outbound):
             yield arg
 
 
 def find_subgraphs_by_preds(xmrs, preds, connected=None):
-    """
+    u"""
     Yield subgraphs matching a list of preds. Because preds may match
     multiple EPs/nodes in the Xmrs, more than one subgraph is
     possible.
@@ -217,10 +219,10 @@ def find_subgraphs_by_preds(xmrs, preds, connected=None):
     # find all lists of nodeids such that the lists have no repeated nids;
     # keep them as a list (fixme: why not just get sets?)
     nidsets = list(
-        filter(lambda ps: len(set(ps)) == len(ps),
-               map(lambda p: select_nodeids(xmrs, pred=p), preds))
+        ifilter(lambda ps: len(set(ps)) == len(ps),
+               imap(lambda p: select_nodeids(xmrs, pred=p), preds))
     )
-    for sg in map(xmrs.subgraph, product(*nidsets)):
+    for sg in imap(xmrs.subgraph, product(*nidsets)):
         if connected is not None and sg.is_connected() != connected:
             continue
         yield sg

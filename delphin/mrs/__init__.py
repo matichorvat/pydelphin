@@ -1,5 +1,5 @@
 
-"""
+u"""
 The `mrs` package of pyDelphin contains classes and methods related to
 Minimal Recursion Semantics (Copestake et al. 2005). In addition to
 MRS, there are the related formalisms Robust Minimal Recursion Semantics
@@ -35,9 +35,9 @@ classes, such as |ElementaryPredication|, |Node|, or
 
 import imp
 try:
-    imp.find_module('networkx')
-except ImportError as ex:
-    msg = '''\n
+    imp.find_module(u'networkx')
+except ImportError, ex:
+    msg = u'''\n
 The `networkx` package is required for the `delphin.mrs` package.
 You can install `networkx` in several ways:
   * With your operating system\'s package manager (e.g.
@@ -45,7 +45,7 @@ You can install `networkx` in several ways:
   * With PIP (e.g. `pip install networkx`); make sure you're installing
     for Python3 (you may need to use `pip3` instead of `pip`)
   * Or from the project homepage: http://networkx.github.io'''
-    raise ImportError(msg) from ex
+    raise ImportError(msg)
 
 # these may be order-sensitive
 from .components import (
@@ -59,7 +59,7 @@ __all__ = [Hook, Lnk, Node, ElementaryPredication, MrsVariable,
 
 
 def convert(txt, src_fmt, tgt_fmt, single=True, **kwargs):
-    """
+    u"""
     Convert a textual representation of \*MRS from one the src_fmt
     representation to the tgt_fmt representation. By default, only
     read and convert a single \*MRS object (e.g. for `mrx` this
@@ -97,15 +97,15 @@ def convert(txt, src_fmt, tgt_fmt, single=True, **kwargs):
     """
     from importlib import import_module
     try:
-        reader = import_module('{}.{}'.format('delphin.mrs', src_fmt.lower()))
-    except ImportError as ex:
-        msg = '\nCannot find serializer: {}'.format(src_fmt.lower())
-        raise ImportError(msg) from ex
+        reader = import_module(u'{}.{}'.format(u'delphin.mrs', src_fmt.lower()))
+    except ImportError, ex:
+        msg = u'\nCannot find serializer: {}'.format(src_fmt.lower())
+        raise ImportError(msg)
     try:
-        writer = import_module('{}.{}'.format('delphin.mrs', tgt_fmt.lower()))
-    except ImportError as ex:
-        msg = '\nCannot find serializer: {}'.format(tgt_fmt.lower())
-        raise ImportError(msg) from ex
+        writer = import_module(u'{}.{}'.format(u'delphin.mrs', tgt_fmt.lower()))
+    except ImportError, ex:
+        msg = u'\nCannot find serializer: {}'.format(tgt_fmt.lower())
+        raise ImportError(msg)
     return writer.dumps(
         reader.loads(txt, single=single),
         single=single,

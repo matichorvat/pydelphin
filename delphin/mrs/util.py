@@ -10,8 +10,8 @@ second = itemgetter(1)
 
 class AccumulationDict(dict):
     def __init__(self, accumulator, *args, **kwargs):
-        if not hasattr(accumulator, '__call__'):
-            raise TypeError('Accumulator must be a binary function.')
+        if not hasattr(accumulator, u'__call__'):
+            raise TypeError(u'Accumulator must be a binary function.')
         self.accumulator = accumulator
         self.accumulate(*args, **kwargs)
 
@@ -30,8 +30,8 @@ class AccumulationDict(dict):
         for arg in args:
             if isinstance(arg, dict):
                 arg = arg.items()
-            if not hasattr(arg, '__iter__'):
-                raise TypeError('{} object is not iterable'
+            if not hasattr(arg, u'__iter__'):
+                raise TypeError(u'{} object is not iterable'
                                 .format(arg.__class__.__name__))
             for (key, value) in arg:
                 self.__additem__(key, value)
@@ -69,10 +69,10 @@ class ReadOnceDict(dict):
 # adapted from recipe in itertools documentation
 def powerset(iterable):
     s = list(iterable)
-    return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
+    return chain.from_iterable(combinations(s, r) for r in xrange(len(s)+1))
 
 class XmrsDiGraph(DiGraph):
-    def __init__(self, data=None, name='', **attr):
+    def __init__(self, data=None, name=u'', **attr):
         DiGraph.__init__(self, data=data, name=name, attr=attr)
         self.nodeids = [] if data is None else data.nodeids
         self.labels = set([] if data is None else data.labels)
@@ -82,34 +82,34 @@ class XmrsDiGraph(DiGraph):
         seen = set()
         for nid in self.nodeids:
             n = self.node[nid]
-            if n.get('iv') is not None:
-                iv = n['iv']
+            if n.get(u'iv') is not None:
+                iv = n[u'iv']
                 if iv not in self.node:
                     raise XmrsStructureError(
-                        'Intrinsic variable ({}) of node {} is missing from '
-                        'the Xmrs graph.'
+                        u'Intrinsic variable ({}) of node {} is missing from '
+                        u'the Xmrs graph.'
                         .format(iv, nid)
                     )
                 # clear the first time
                 if iv not in seen:
-                    self.node[iv]['bv'] = None
-                    self.node[iv]['iv'] = None
+                    self.node[iv][u'bv'] = None
+                    self.node[iv][u'iv'] = None
                     seen.add(iv)
-                if n['pred'].is_quantifier():
-                    self.add_edge(iv, nid, {'bv': True})  # quantifier
-                    self.node[iv]['bv'] = nid
+                if n[u'pred'].is_quantifier():
+                    self.add_edge(iv, nid, {u'bv': True})  # quantifier
+                    self.node[iv][u'bv'] = nid
                 else:
-                    self.add_edge(iv, nid, {'iv': True})  # intrinsic arg
-                    self.node[iv]['iv'] = nid
+                    self.add_edge(iv, nid, {u'iv': True})  # intrinsic arg
+                    self.node[iv][u'iv'] = nid
 
 
     def subgraph(self, nbunch):
         nbunch = list(nbunch)
         sg = DiGraph.subgraph(self, nbunch)
         node = sg.node
-        sg.nodeids = [nid for nid in nbunch if 'pred' in node[nid]]
-        sg.labels = set(node[nid]['label'] for nid in nbunch
-                        if 'label' in node[nid])
+        sg.nodeids = [nid for nid in nbunch if u'pred' in node[nid]]
+        sg.labels = set(node[nid][u'label'] for nid in nbunch
+                        if u'label' in node[nid])
         g = XmrsDiGraph(sg)
         g.refresh()
         return g
@@ -119,9 +119,9 @@ class XmrsDiGraph(DiGraph):
         g = relabel_nodes(self, mapping)
         # also need to fix where we store it ourselves
         for tnid in mapping.values():
-            iv = g.node[tnid]['iv']
+            iv = g.node[tnid][u'iv']
             if iv is not None:
-                v = 'bv' if g.node[tnid]['pred'].is_quantifier() else 'iv'
+                v = u'bv' if g.node[tnid][u'pred'].is_quantifier() else u'iv'
                 g.node[iv][v] = tnid
         g.nodeids = [mapping.get(n, n) for n in self.nodeids]
         g.labels = set(self.labels)

@@ -18,6 +18,7 @@ from delphin._exceptions import XmrsDeserializationError as XDE
 from delphin.mrs.config import IVARG_ROLE
 
 import xml.etree.ElementTree as etree
+from itertools import imap
 
 ##############################################################################
 ##############################################################################
@@ -27,22 +28,22 @@ import xml.etree.ElementTree as etree
 def load(fh, single=False):
     ms = decode(fh)
     if single:
-        ms = next(ms)
+        ms = ms.next()
     return ms
 
 
-def loads(s, single=False, encoding='utf-8'):
-    ms = decode(BytesIO(bytes(s, encoding=encoding)))
+def loads(s, single=False, encoding=u'utf-8'):
+    ms = decode(BytesIO(str(s).encode(encoding)))
     if single:
-        ms = next(ms)
+        ms = ms.next()
     return ms
 
 
 def dump(fh, ms, **kwargs):
-    print(dumps(ms, **kwargs), file=fh)
+    print >>fh, dumps(ms, **kwargs)
 
 
-def dumps(ms, single=False, encoding='unicode', pretty_print=False, **kwargs):
+def dumps(ms, single=False, encoding=u'unicode', pretty_print=False, **kwargs):
     if single:
         ms = [ms]
     return encode(ms, encoding=encoding, pretty_print=pretty_print)
@@ -64,13 +65,13 @@ _vars = {}
 
 
 def decode(fh):
-    """Decode an MRX-encoded MRS structure."""
+    u"""Decode an MRX-encoded MRS structure."""
     # <!ELEMENT mrs-list (mrs)*>
     # if memory becomes a big problem, consider catching start events,
     # get the root element (later start events can be ignored), and
     # root.clear() after decoding each mrs
-    for event, elem in etree.iterparse(fh, events=('end',)):
-        if elem.tag == 'mrs':
+    for event, elem in etree.iterparse(fh, events=(u'end',)):
+        if elem.tag == u'mrs':
             yield decode_mrs(elem)
             elem.clear()
 
@@ -82,24 +83,24 @@ def decode_mrs(elem):
     #           cto       CDATA #IMPLIED
     #           surface   CDATA #IMPLIED
     #           ident     CDATA #IMPLIED >
-    elem = elem.find('.')  # in case elem is ElementTree rather than Element
+    elem = elem.find(u'.')  # in case elem is ElementTree rather than Element
     global _vars
     _vars = {}
     # normalize_vars(elem) # try to make all vars have a sort
-    return Mrs(hook=Hook(ltop=decode_label(elem.find('label')),
-                         index=decode_var(elem.find('var'))),
-               rels=list(map(decode_ep, elem.iter('ep'))),
-               hcons=list(map(decode_hcons, elem.iter('hcons'))),
-               lnk=decode_lnk(elem.get('cfrom'), elem.get('cto')),
-               surface=elem.get('surface'),
-               identifier=elem.get('ident'))
+    return Mrs(hook=Hook(ltop=decode_label(elem.find(u'label')),
+                         index=decode_var(elem.find(u'var'))),
+               rels=list(imap(decode_ep, elem.iter(u'ep'))),
+               hcons=list(imap(decode_hcons, elem.iter(u'hcons'))),
+               lnk=decode_lnk(elem.get(u'cfrom'), elem.get(u'cto')),
+               surface=elem.get(u'surface'),
+               identifier=elem.get(u'ident'))
 
 
 def decode_label(elem):
     # <!ELEMENT label (extrapair*)>
     # <!ATTLIST label
     #           vid CDATA #REQUIRED >
-    return decode_var(elem, sort='h')
+    return decode_var(elem, sort=u'h')
 
 
 def decode_var(elem, sort=None):
@@ -107,13 +108,13 @@ def decode_var(elem, sort=None):
     # <!ATTLIST var
     #           vid  CDATA #REQUIRED
     #           sort (x|e|h|u|l|i) #IMPLIED >
-    vid = elem.get('vid')
-    srt = sort or elem.get('sort')
-    props = decode_extrapairs(elem.iter('extrapair'))
+    vid = elem.get(u'vid')
+    srt = sort or elem.get(u'sort')
+    props = decode_extrapairs(elem.iter(u'extrapair'))
     if vid in _vars:
         if srt != _vars[vid].sort:
-            raise XDE('Variable {}{} has a conflicting sort with {}'
-                      .format(srt, vid, str(_vars[vid])))
+            raise XDE(u'Variable {}{} has a conflicting sort with {}'
+                      .format(srt, vid, unicode(_vars[vid])))
         _vars[vid].properties.update(props)
     else:
         _vars[vid] = MrsVariable(vid=vid, sort=srt, properties=props)
@@ -124,7 +125,7 @@ def decode_extrapairs(elems):
     # <!ELEMENT extrapair (path,value)>
     # <!ELEMENT path (#PCDATA)>
     # <!ELEMENT value (#PCDATA)>
-    return OrderedDict((e.find('path').text.upper(), e.find('value').text)
+    return OrderedDict((e.find(u'path').text.upper(), e.find(u'value').text)
                        for e in elems)
 
 
@@ -135,13 +136,13 @@ def decode_ep(elem):
     #           cto   CDATA #IMPLIED
     #           surface   CDATA #IMPLIED
     #           base      CDATA #IMPLIED >
-    return ElementaryPredication(pred=decode_pred(elem.find('./')),
-                                 label=decode_label(elem.find('label')),
+    return ElementaryPredication(pred=decode_pred(elem.find(u'./')),
+                                 label=decode_label(elem.find(u'label')),
                                  args=decode_args(elem),
-                                 lnk=decode_lnk(elem.get('cfrom'),
-                                                elem.get('cto')),
-                                 surface=elem.get('surface'),
-                                 base=elem.get('base'))
+                                 lnk=decode_lnk(elem.get(u'cfrom'),
+                                                elem.get(u'cto')),
+                                 surface=elem.get(u'surface'),
+                                 base=elem.get(u'base'))
 
 
 def decode_pred(elem):
@@ -152,14 +153,14 @@ def decode_pred(elem):
     #           lemma CDATA #REQUIRED
     #           pos (v|n|j|r|p|q|c|x|u|a|s) #REQUIRED
     #           sense CDATA #IMPLIED >
-    if elem.tag == 'pred':
+    if elem.tag == u'pred':
         return Pred.grammarpred(elem.text)
-    elif elem.tag == 'spred':
+    elif elem.tag == u'spred':
         return Pred.stringpred(elem.text)
-    elif elem.tag == 'realpred':
-        return Pred.readpred(elem.get('lemma'),
-                             elem.get('pos'),
-                             elem.get('sense'))
+    elif elem.tag == u'realpred':
+        return Pred.readpred(elem.get(u'lemma'),
+                             elem.get(u'pos'),
+                             elem.get(u'sense'))
 
 
 def decode_args(elem):
@@ -169,12 +170,12 @@ def decode_args(elem):
     # This code assumes that only cargs have constant values, and all
     # other args (including IVs) have var values.
     args = []
-    for e in elem.findall('fvpair'):
-        argname = e.find('rargname').text.upper()
-        if e.find('constant') is not None:
-            argval = e.find('constant').text
-        elif e.find('var') is not None:
-            argval = decode_var(e.find('var'))
+    for e in elem.findall(u'fvpair'):
+        argname = e.find(u'rargname').text.upper()
+        if e.find(u'constant') is not None:
+            argval = e.find(u'constant').text
+        elif e.find(u'var') is not None:
+            argval = decode_var(e.find(u'var'))
         args.append(Argument.mrs_argument(argname, argval))
     return args
 
@@ -185,10 +186,10 @@ def decode_hcons(elem):
     #           hreln (qeq|lheq|outscopes) #REQUIRED >
     # <!ELEMENT hi (var)>
     # <!ELEMENT lo (label|var)>
-    lo = elem.find('lo/')
-    return HandleConstraint(decode_var(elem.find('hi/var')),
-                            elem.get('hreln'),
-                            decode_var(lo) if lo.tag == 'var' else
+    lo = elem.find(u'lo/')
+    return HandleConstraint(decode_var(elem.find(u'hi/var')),
+                            elem.get(u'hreln'),
+                            decode_var(lo) if lo.tag == u'var' else
                             decode_label(lo))
 
 
@@ -196,7 +197,7 @@ def decode_lnk(cfrom, cto):
     if cfrom is cto is None:
         return None
     elif None in (cfrom, cto):
-        raise ValueError('Both cfrom and cto, or neither, must be specified.')
+        raise ValueError(u'Both cfrom and cto, or neither, must be specified.')
     else:
         return Lnk.charspan(cfrom, cto)
 
@@ -205,27 +206,27 @@ def decode_lnk(cfrom, cto):
 # Encoding
 
 
-def encode(ms, encoding='unicode', pretty_print=False):
-    e = etree.Element('mrs-list')
+def encode(ms, encoding=u'unicode', pretty_print=False):
+    e = etree.Element(u'mrs-list')
     for m in ms:
         e.append(encode_mrs(m))
     if pretty_print:
         import re
-        pprint_re = re.compile(r'(<mrs[^-]|</mrs>|</mrs-list>'
-                               r'|<ep\s|<fvpair>|<extrapair>|<hcons\s)',
+        pprint_re = re.compile(ur'(<mrs[^-]|</mrs>|</mrs-list>'
+                               ur'|<ep\s|<fvpair>|<extrapair>|<hcons\s)',
                                re.IGNORECASE)
         string = etree.tostring(e, encoding=encoding)
-        return pprint_re.sub(r'\n\1', string)
+        return pprint_re.sub(ur'\n\1', string)
     return etree.tostring(e, encoding=encoding)
 
 
 def encode_mrs(m):
-    attributes = {'cfrom': str(m.cfrom), 'cto': str(m.cto)}
+    attributes = {u'cfrom': unicode(m.cfrom), u'cto': unicode(m.cto)}
     if m.surface is not None:
-        attributes['surface'] = m.surface
+        attributes[u'surface'] = m.surface
     if m.identifier is not None:
-        attributes['ident'] = m.identifier
-    e = etree.Element('mrs', attrib=attributes)
+        attributes[u'ident'] = m.identifier
+    e = etree.Element(u'mrs', attrib=attributes)
     listed_vars = set()
     if m.ltop is not None:
         e.append(encode_label(m.ltop))
@@ -239,13 +240,13 @@ def encode_mrs(m):
 
 
 def encode_label(label):
-    return etree.Element('label', vid=str(label.vid))
+    return etree.Element(u'label', vid=unicode(label.vid))
 
 
 def encode_variable(v, listed_vars=None):
     if listed_vars is None:
         listed_vars = set()
-    var = etree.Element('var', vid=str(v.vid), sort=v.sort)
+    var = etree.Element(u'var', vid=unicode(v.vid), sort=v.sort)
     if v.vid not in listed_vars and v.properties:
         var.extend(encode_extrapair(key, val)
                    for key, val in v.properties.items())
@@ -254,22 +255,22 @@ def encode_variable(v, listed_vars=None):
 
 
 def encode_extrapair(key, value):
-    extrapair = etree.Element('extrapair')
-    path = etree.Element('path')
+    extrapair = etree.Element(u'extrapair')
+    path = etree.Element(u'path')
     path.text = key
-    val = etree.Element('value')
+    val = etree.Element(u'value')
     val.text = value
     extrapair.extend([path, val])
     return extrapair
 
 
 def encode_ep(ep, listed_vars):
-    attributes = {'cfrom': str(ep.cfrom), 'cto': str(ep.cto)}
+    attributes = {u'cfrom': unicode(ep.cfrom), u'cto': unicode(ep.cto)}
     if ep.surface is not None:
-        attributes['surface'] = ep.surface
+        attributes[u'surface'] = ep.surface
     if ep.base is not None:
-        attributes['base'] = ep.base
-    e = etree.Element('ep', attrib=attributes)
+        attributes[u'base'] = ep.base
+    e = etree.Element(u'ep', attrib=attributes)
     e.append(encode_pred(ep.pred))
     e.append(encode_label(ep.label))
     if ep.iv is not None:
@@ -286,22 +287,22 @@ def encode_ep(ep, listed_vars):
 def encode_pred(pred):
     p = None
     if pred.type == Pred.GRAMMARPRED:
-        p = etree.Element('pred')
+        p = etree.Element(u'pred')
         p.text = pred.string
     elif pred.type == Pred.STRINGPRED:
-        p = etree.Element('spred')
+        p = etree.Element(u'spred')
         p.text = pred.string
     elif pred.type == Pred.REALPRED:
-        attributes = {'lemma': pred.lemma, 'pos': pred.pos}
+        attributes = {u'lemma': pred.lemma, u'pos': pred.pos}
         if pred.sense is not None:
-            attributes['sense'] = pred.sense
-        p = etree.Element('realpred', attrib=attributes)
+            attributes[u'sense'] = pred.sense
+        p = etree.Element(u'realpred', attrib=attributes)
     return p
 
 
 def encode_arg(key, value):
-    fvpair = etree.Element('fvpair')
-    rargname = etree.Element('rargname')
+    fvpair = etree.Element(u'fvpair')
+    rargname = etree.Element(u'rargname')
     rargname.text = key
     fvpair.append(rargname)
     fvpair.append(value)
@@ -309,16 +310,16 @@ def encode_arg(key, value):
 
 
 def encode_constant(value):
-    const = etree.Element('constant')
+    const = etree.Element(u'constant')
     const.text = value
     return const
 
 
 def encode_hcon(hcon):
-    hcons = etree.Element('hcons', hreln=hcon.relation)
-    hi = etree.Element('hi')
+    hcons = etree.Element(u'hcons', hreln=hcon.relation)
+    hi = etree.Element(u'hi')
     hi.append(encode_variable(hcon.hi))
-    lo = etree.Element('lo')
+    lo = etree.Element(u'lo')
     lo.append(encode_variable(hcon.lo))
     hcons.extend([hi, lo])
     return hcons

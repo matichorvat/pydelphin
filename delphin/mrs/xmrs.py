@@ -14,11 +14,13 @@ from .config import (
     RSTR_ROLE, EQ_POST, NEQ_POST, HEQ_POST, H_POST, NIL_POST
 )
 from .util import XmrsDiGraph, first, second
+from itertools import izip
+from itertools import imap
 
 
 def Mrs(hook=None, rels=None, hcons=None, icons=None,
         lnk=None, surface=None, identifier=None):
-    """
+    u"""
     Construct an |Xmrs| using MRS components.
 
     Formally, Minimal Recursion Semantics (MRS) have a top handle, a
@@ -72,7 +74,7 @@ def Mrs(hook=None, rels=None, hcons=None, icons=None,
 
 def Rmrs(hook=None, eps=None, args=None, hcons=None, icons=None,
          lnk=None, surface=None, identifier=None):
-    """
+    u"""
     Construct an |Xmrs| from RMRS components.
 
     Robust Minimal Recursion Semantics (RMRS) are like MRS, but all
@@ -115,11 +117,11 @@ def Rmrs(hook=None, eps=None, args=None, hcons=None, icons=None,
     args = list(args or [])
     for arg in args:
         if arg.nodeid is None:
-            raise XmrsStructureError("RMRS args must have an anchor/nodeid.")
+            raise XmrsStructureError(u"RMRS args must have an anchor/nodeid.")
     # make the EPs more MRS-like (with arguments)
     for ep in eps:
         if ep.nodeid is None:
-            raise XmrsStructureError("RMRS EPs must have an anchor/nodeid.")
+            raise XmrsStructureError(u"RMRS EPs must have an anchor/nodeid.")
         argdict = OrderedDict((a.argname, a) for a in args
                               if a.nodeid == ep.nodeid)
         ep.argdict = argdict
@@ -132,7 +134,7 @@ def Rmrs(hook=None, eps=None, args=None, hcons=None, icons=None,
 def Dmrs(nodes=None, links=None,
          lnk=None, surface=None, identifier=None,
          **kwargs):
-    """
+    u"""
     Construct an |Xmrs| using DMRS components.
 
     Dependency Minimal Recursion Semantics (DMRS) have a list of |Node|
@@ -164,7 +166,7 @@ def Dmrs(nodes=None, links=None,
     ivs = _make_ivs(nodes, vgen)
     hook = Hook(ltop=labels[LTOP_NODEID])  # no index for now
     # initialize args with ARG0 for intrinsic variables
-    args = {nid: [Argument(nid, IVARG_ROLE, iv)] for nid, iv in ivs.items()}
+    args = dict((nid, [Argument(nid, IVARG_ROLE, iv)]) for nid, iv in ivs.items())
     hcons = []
     for l in links:
         if l.start not in args:
@@ -252,31 +254,31 @@ def build_graph(hook, eps, hcons, icons):
         g.nodeids.append(nid)
         g.labels.add(lbl)
         g.add_node(nid, {
-            'pred': ep.pred, 'iv': iv, 'label': lbl, 'lnk': ep.lnk,
-            'surface': ep.surface, 'base': ep.base, 'rargs': OrderedDict()
+            u'pred': ep.pred, u'iv': iv, u'label': lbl, u'lnk': ep.lnk,
+            u'surface': ep.surface, u'base': ep.base, u'rargs': OrderedDict()
         })
         g.add_edge(lbl, nid)
         for arg in ep.args:
-            g.add_edge(nid, arg.value, {'rargname': arg.argname })
-            g.node[nid]['rargs'][arg.argname] = arg.value
+            g.add_edge(nid, arg.value, {u'rargname': arg.argname })
+            g.node[nid][u'rargs'][arg.argname] = arg.value
     for hc in hcons:
-        g.add_edge(hc.hi, hc.lo, {'relation': hc.relation})
-        g.node[hc.hi]['hcons'] = hc
+        g.add_edge(hc.hi, hc.lo, {u'relation': hc.relation})
+        g.node[hc.hi][u'hcons'] = hc
     for ic in icons:
-        g.add_edge(ic.target, ic.clause, {'relation': ic.relation})
-        g.node[ic.target]['icons'] = ic
+        g.add_edge(ic.target, ic.clause, {u'relation': ic.relation})
+        g.node[ic.target][u'icons'] = ic
     g.refresh()  # sets up back-links from IVs to nodes and quantifiers
     return g
 
 
 class Xmrs(LnkMixin):
-    """
+    u"""
     Xmrs is a common class for Mrs, Rmrs, and Dmrs objects.
     """
 
     def __init__(self, graph=None, hook=None,
                  lnk=None, surface=None, identifier=None):
-        """
+        u"""
         Xmrs can be instantiated directly, but it is meant to be created
         by the constructor methods :py:meth:`Mrs`, :py:meth:`Rmrs`, or
         :py:meth:`Dmrs`.
@@ -308,17 +310,17 @@ class Xmrs(LnkMixin):
 
     def __repr__(self):
         if self.surface is not None:
-            stringform = '"{}"'.format(self.surface)
+            stringform = u'"{}"'.format(self.surface)
         else:
-            stringform = ' '.join(ep.pred.lemma for ep in self.eps)
-        return '<Xmrs object ({}) at {}>'.format(stringform, id(self))
+            stringform = u' '.join(ep.pred.lemma for ep in self.eps)
+        return u'<Xmrs object ({}) at {}>'.format(stringform, id(self))
 
     def __hash__(self):
         # isomorphic MRSs should hash to the same thing, but
         # calculating isomorphism is expensive. Approximate it.
-        return hash(' '.join(
+        return hash(u' '.join(
             sorted(
-                '{}:{}'.format(ep.pred.short_form(), len(ep.argdict))
+                u'{}:{}'.format(ep.pred.short_form(), len(ep.argdict))
                 for ep in self.eps
             )
         ))
@@ -334,7 +336,7 @@ class Xmrs(LnkMixin):
         eps2 = other.eps
         if len(eps1) != len(eps2):
             return False
-        zipped_eps = zip(sorted(eps1), sorted(eps2))
+        zipped_eps = izip(sorted(eps1), sorted(eps2))
         for ep1, ep2 in zipped_eps:
             if ep1 != ep2:
                 return False
@@ -345,19 +347,19 @@ class Xmrs(LnkMixin):
 
     @property
     def nodeids(self):
-        """The list of `nodeids`."""
+        u"""The list of `nodeids`."""
         # does not return LTOP nodeid
         return list(self._graph.nodeids)
 
     @property
     def anchors(self):
-        """The list of `anchors`."""
+        u"""The list of `anchors`."""
         # does not return LTOP anchor
-        return list(map(MrsVariable.anchor, self.nodeids))
+        return list(imap(MrsVariable.anchor, self.nodeids))
 
     @property
     def variables(self):
-        """The list of all |MrsVariable| objects specified in the Xmrs."""
+        u"""The list of all |MrsVariable| objects specified in the Xmrs."""
         all_vars = set(self.introduced_variables).union(
             [a.value for a in self.args if isinstance(a.value, MrsVariable)] +
             [hc.lo for hc in self.hcons]
@@ -370,7 +372,7 @@ class Xmrs(LnkMixin):
 
     @property
     def introduced_variables(self):
-        """
+        u"""
         The list of the |MrsVariables| that are _introduced_ in the
         Xmrs. Introduced |MrsVariables| exist as intrinsic
         variables, labels, or holes (the HI variable of a QEQ).
@@ -382,7 +384,7 @@ class Xmrs(LnkMixin):
 
     @property
     def intrinsic_variables(self):
-        """The list of intrinsic variables."""
+        u"""The list of intrinsic variables."""
         return list(ep.iv for ep in self.eps if not ep.is_quantifier())
 
     #: A synonym for :py:attr:`~delphin.mrs.xmrs.Xmrs.intrinsic_variables`
@@ -390,7 +392,7 @@ class Xmrs(LnkMixin):
 
     @property
     def bound_variables(self):
-        """
+        u"""
         The list of bound variables (i.e. the value of the intrinsic
         argument of quantifiers).
         """
@@ -401,14 +403,14 @@ class Xmrs(LnkMixin):
 
     @property
     def labels(self):
-        """The list of labels of the |EPs| in the Xmrs."""
+        u"""The list of labels of the |EPs| in the Xmrs."""
         g = self._graph
-        return list(set(g.node[nid]['label'] for nid in g.nodeids))
+        return list(set(g.node[nid][u'label'] for nid in g.nodeids))
         # set(ep.label for ep in self._nid_to_ep.values()))
 
     @property
     def ltop(self):
-        """The LTOP |MrsVariable|, if it exists, otherwise None."""
+        u"""The LTOP |MrsVariable|, if it exists, otherwise None."""
         return self.hook.top
 
     #: A synonym for :py:attr:`~delphin.mrs.xmrs.Xmrs.ltop`
@@ -416,44 +418,44 @@ class Xmrs(LnkMixin):
 
     @property
     def index(self):
-        """The INDEX |MrsVariable|, if it exists, otherwise None."""
+        u"""The INDEX |MrsVariable|, if it exists, otherwise None."""
         return self.hook.index
 
     @property
     def nodes(self):
-        """The list of |Nodes|."""
-        return list(map(self.get_node, self.nodeids))
+        u"""The list of |Nodes|."""
+        return list(imap(self.get_node, self.nodeids))
 
     @property
     def eps(self):
-        """The list of |ElementaryPredications|."""
-        return list(map(self.get_ep, self.nodeids))
+        u"""The list of |ElementaryPredications|."""
+        return list(imap(self.get_ep, self.nodeids))
 
     #: A synonym for :py:attr:`~delphin.mrs.xmrs.Xmrs.eps`
     rels = eps
 
     @property
     def args(self):
-        """The list of all |Arguments|."""
+        u"""The list of all |Arguments|."""
         return list(chain.from_iterable(ep.args for ep in self.eps))
 
     @property
     def hcons(self):
-        """The list of all |HandleConstraints|."""
+        u"""The list of all |HandleConstraints|."""
         nodes = self._graph.nodes(data=True)
-        return sorted((data['hcons'] for _, data in nodes if 'hcons' in data),
+        return sorted((data[u'hcons'] for _, data in nodes if u'hcons' in data),
                       key=lambda hc: hc.hi.vid)
 
     @property
     def icons(self):
-        """The list of all |IndividualConstraints|."""
+        u"""The list of all |IndividualConstraints|."""
         nodes = self._graph.nodes(data=True)
-        return sorted((data['icons'] for _, data in nodes if 'icons' in data),
+        return sorted((data[u'icons'] for _, data in nodes if u'icons' in data),
                       key=lambda ic: ic.target.vid)
 
     @property
     def links(self):
-        """The list of |Links|."""
+        u"""The list of |Links|."""
         # Return the set of links for the XMRS structure. Links exist
         # for every non-intrinsic argument that has a variable
         # that is the intrinsic variable of some other predicate,
@@ -467,30 +469,30 @@ class Xmrs(LnkMixin):
         for s, t, d in g.out_edges_iter([LTOP_NODEID] + g.nodeids, data=True):
             try:
                 t_d = g.node[t]
-                if t_d.get('iv') == s or t_d.get('bv') == s:
+                if t_d.get(u'iv') == s or t_d.get(u'bv') == s:
                     continue  # ignore ARG0s
-                if 'iv' in t_d and t_d['iv'] is not None:
-                    t = t_d['iv']
-                    s_lbl = g.node[s].get('label')  # LTOP_NODEID has no label
-                    t_lbl = g.node[t]['label']
+                if u'iv' in t_d and t_d[u'iv'] is not None:
+                    t = t_d[u'iv']
+                    s_lbl = g.node[s].get(u'label')  # LTOP_NODEID has no label
+                    t_lbl = g.node[t][u'label']
                     if s_lbl == t_lbl:
                         post = EQ_POST
                         attested_eqs[s_lbl].update([s, t])
                     else:
                         post = NEQ_POST
-                elif 'hcons' in t_d:
-                    t = self.labelset_head(t_d['hcons'].lo)
+                elif u'hcons' in t_d:
+                    t = self.labelset_head(t_d[u'hcons'].lo)
                     post = H_POST
                 elif t in g.labels:
                     t = self.labelset_head(t)
                     post = HEQ_POST
                 else:
                     continue  # maybe log this
-                links.append(Link(s, t, d.get('rargname'), post))
-            except XmrsError as ex:
+                links.append(Link(s, t, d.get(u'rargname'), post))
+            except XmrsError, ex:
                 warnings.warn(
-                    'Error creating a link for {}:{}:\n  {}'
-                    .format(s, d.get('rargname', ''), repr(ex))
+                    u'Error creating a link for {}:{}:\n  {}'
+                    .format(s, d.get(u'rargname', u''), repr(ex))
                 )
 
         # now EQ links unattested by arg links
@@ -512,7 +514,7 @@ class Xmrs(LnkMixin):
 
     # accessor functions
     def get_nodeid(self, iv, quantifier=False):
-        """
+        u"""
         Retrieve the nodeid of an |EP| given an intrinsic variable, or
         return None if no matching |EP| is found.
 
@@ -526,10 +528,10 @@ class Xmrs(LnkMixin):
         """
         if iv not in self._graph:
             return None
-        return self._graph.node[iv].get('bv' if quantifier else 'iv')
+        return self._graph.node[iv].get(u'bv' if quantifier else u'iv')
 
     def get_ep(self, nodeid):
-        """
+        u"""
         Retrieve the |EP| with the given nodeid, or None if no |EPs|
         match.
 
@@ -541,22 +543,22 @@ class Xmrs(LnkMixin):
         try:
             d = self._graph.node[nodeid]
             args = [Argument(nodeid, rargname, value)
-                    for rargname, value in d['rargs'].items()]
+                    for rargname, value in d[u'rargs'].items()]
             ep = ElementaryPredication(
-                d['pred'],
-                d['label'],
+                d[u'pred'],
+                d[u'label'],
                 anchor=MrsVariable.anchor(nodeid),
                 args=args,
-                lnk=d.get('lnk'),
-                surface=d.get('surface'),
-                base=d.get('base')
+                lnk=d.get(u'lnk'),
+                surface=d.get(u'surface'),
+                base=d.get(u'base')
             )
             return ep
         except KeyError:
             return None
 
     def get_node(self, nodeid):
-        """
+        u"""
         Return the |Node| with the given nodeid, or None if no |Nodes|
         match.
 
@@ -569,20 +571,20 @@ class Xmrs(LnkMixin):
             d = self._graph.node[nodeid]
         except AttributeError:
             return None
-        iv = d.get('iv')
+        iv = d.get(u'iv')
         node = Node(
             nodeid,
-            d['pred'],
+            d[u'pred'],
             sortinfo=None if iv is None else iv.sortinfo,
-            lnk=d.get('lnk'),
-            surface=d.get('surface'),
-            base=d.get('base'),
-            carg=d['rargs'].get(CONSTARG_ROLE)
+            lnk=d.get(u'lnk'),
+            surface=d.get(u'surface'),
+            base=d.get(u'base'),
+            carg=d[u'rargs'].get(CONSTARG_ROLE)
         )
         return node
 
     def get_arg(self, nodeid, rargname):
-        """
+        u"""
         Return the |Argument| from the given nodeid and the argument's
         role name.
 
@@ -607,7 +609,7 @@ class Xmrs(LnkMixin):
     #    ...
 
     def labelset(self, label):
-        """
+        u"""
         Return the set of nodeids for |EPs| that share a label.
 
         Args:
@@ -618,15 +620,15 @@ class Xmrs(LnkMixin):
         lblset = set(nx.node_boundary(self._graph, [label]))
         if len(lblset) == 0:
             raise XmrsStructureError(
-                'Cannot get labelset for {}. It is not used as a label.'
-                .format(str(label))
+                u'Cannot get labelset for {}. It is not used as a label.'
+                .format(unicode(label))
             )
         return lblset
         # alternatively:
         # return list(self._graph.adj[label].keys())
 
     def in_labelset(self, nodeids, label=None):
-        """
+        u"""
         Test if all nodeids share a label.
 
         Args:
@@ -636,12 +638,12 @@ class Xmrs(LnkMixin):
             True if all nodeids share a label, otherwise False.
         """
         if label is None:
-            label = self._graph.node[next(iter(nodeids))]['label']
+            label = self._graph.node[iter(nodeids).next()][u'label']
         lblset = self.labelset(label)
         return lblset.issuperset(nodeids)
 
     def labelset_head(self, label, single=True):
-        """
+        u"""
         Return the head(s) of the labelset selected by `label`.
 
         Args:
@@ -662,16 +664,16 @@ class Xmrs(LnkMixin):
         heads = list(h for h, od in g.out_degree(lblset).items() if od <= 1)
         head_count = len(heads)
         if head_count == 0:
-            raise XmrsStructureError('No head found for label {}.'
+            raise XmrsStructureError(u'No head found for label {}.'
                                      .format(label))
         if not single:
-            return list(map(first, sorted(g.in_degree(heads).items(),
+            return list(imap(first, sorted(g.in_degree(heads).items(),
                                           key=second, reverse=True)))
         else:
             return max(g.in_degree(heads).items(), key=second)[0]
 
     def subgraph(self, nodeids):
-        """
+        u"""
         Return an |Xmrs| object representing the subgraph containing
         only the specified nodeids. Necessary variables are also
         included. in order to connect any nodes that are connected in
@@ -685,14 +687,14 @@ class Xmrs(LnkMixin):
         """
         g = self._graph
         nbunch = list(OrderedDict.fromkeys(nodeids))  # remove dupes
-        labels = set(g.node[nid]['label'] for nid in nbunch)
+        labels = set(g.node[nid][u'label'] for nid in nbunch)
         nbunch.extend(labels)
         for nid in nodeids:
-            iv = g.node[nid]['iv']
+            iv = g.node[nid][u'iv']
             if iv is not None:
                 nbunch.append(iv)
             for succ in g.successors_iter(nid):
-                hc = g.node[succ].get('hcons')
+                hc = g.node[succ].get(u'hcons')
                 if hc is not None and hc.lo in labels:
                     nbunch.append(hc.hi)
         sg = g.subgraph(nbunch)
@@ -703,7 +705,7 @@ class Xmrs(LnkMixin):
         self._graph = self._graph.relabel_nodes(mapping)
 
     def is_connected(self):
-        """
+        u"""
         Return True if the Xmrs represents a connected graph.
         Subgraphs can be connected through things like arguments,
         QEQs, and label equalities.
@@ -711,10 +713,10 @@ class Xmrs(LnkMixin):
         try:
             return nx.is_weakly_connected(self._graph)
         except nx.exception.NetworkXPointlessConcept:
-            raise XmrsError("Connectivity is undefined for an empty Xmrs.")
+            raise XmrsError(u"Connectivity is undefined for an empty Xmrs.")
 
     def is_well_formed(self):
-        """
+        u"""
         Return True if the Xmrs is well-formed, False otherwise.
 
         A well-formed Xmrs has the following properties (note, `node`
@@ -730,10 +732,10 @@ class Xmrs(LnkMixin):
         g = self._graph
         return (
             self.is_connected() and
-            all(g.node[nid].get('label', None) in g.labels
+            all(g.node[nid].get(u'label', None) in g.labels
                 for nid in g.nodeids) and
-            all(d['qeq'].lo in g.labels
+            all(d[u'qeq'].lo in g.labels
                 for nid in g.nodeids
                 for _, _, d in g.out_edges_iter(nid, data=True)
-                if 'qeq' in d)
+                if u'qeq' in d)
         )

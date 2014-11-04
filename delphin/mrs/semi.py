@@ -1,3 +1,5 @@
+from itertools import izip
+from itertools import ifilter
 class SemI(object):
     def __init__(self, vpm=None):
         self._vpm = vpm
@@ -27,7 +29,7 @@ class Vpm(object):
         pass
 
     def map_properties(self, properties, reverse=False):
-        """
+        u"""
         Return a dictionary of properties and their values after the
         applicable VPM rules have applied.
         @param properties: A dictionary of {property:value}
@@ -37,7 +39,7 @@ class Vpm(object):
         """
         frm = lambda x: x[-1] if reverse else x[0]
         to = lambda x: x[0] if reverse else x[-1]
-        valid_ops = ('<' if reverse else '>', '=')
+        valid_ops = (u'<' if reverse else u'>', u'=')
         op_match = lambda x: to(x[1]) in valid_ops
         match = lambda x: self.map_match(properties, x, frm, to, op_match)
         return dict((prop, val)
@@ -46,10 +48,10 @@ class Vpm(object):
                                                    frm, to, match))
 
     def find_map(self, properties, pm, vm, frm, to, match):
-        return [next(zip(to(pm), to(vm)) for vm in filter(match, vmlist))]
+        return [izip(to(pm), to(vm)) for vm in ifilter(match, vmlist).next()]
 
     def map_match(self, properties, valmap, frm, to, op_match):
-        """
+        u"""
         Return True if the "from" side of the valmap matches the properties.
         A match is obtained if properties match a mapping given the operator,
         the mapping specifies * and the property is non-null
