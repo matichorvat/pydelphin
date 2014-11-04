@@ -8,7 +8,7 @@ from distutils.core import setup, Command
 
 # thanks: http://da44en.wordpress.com/2002/11/22/using-distutils/
 class TestCommand(Command):
-    description=u'run unit tests'
+    description='run unit tests'
     user_options = [ ]
 
     def initialize_options(self):
@@ -18,14 +18,14 @@ class TestCommand(Command):
         pass
 
     def run(self):
-        u'''
+        '''
         Finds all the tests modules in tests/, and runs them.
         '''
         testfiles = [ ]
-        for t in glob(pjoin(self._dir, u'tests', u'*.py')):
-            if not t.endswith(u'__init__.py'):
-                testfiles.append(u'.'.join(
-                    [u'tests', splitext(basename(t))[0]])
+        for t in glob(pjoin(self._dir, 'tests', '*.py')):
+            if not t.endswith('__init__.py'):
+                testfiles.append('.'.join(
+                    ['tests', splitext(basename(t))[0]])
                 )
 
         tests = TestLoader().loadTestsFromNames(testfiles)
@@ -33,15 +33,15 @@ class TestCommand(Command):
         t.run(tests)
 
 setup(
-    name=u'pyDelphin',
-    version=u'0.2',
-    url=u'https://github.com/goodmami/pydelphin',
-    author=u'Michael Wayne Goodman',
-    author_email=u'goodman.m.w@gmail.com',
-    description=u'Libraries and scripts for DELPH-IN data.',
-    packages=[u'delphin'],
-    cmdclass={u'test':TestCommand},
+    name='pyDelphin',
+    version='0.2',
+    url='https://github.com/goodmami/pydelphin',
+    author='Michael Wayne Goodman',
+    author_email='goodman.m.w@gmail.com',
+    description='Libraries and scripts for DELPH-IN data.',
+    packages=['delphin'],
+    cmdclass={'test':TestCommand},
     install_requires=[
-        u'networkx',
+        'networkx',
     ]
 )
