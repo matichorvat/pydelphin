@@ -39,7 +39,7 @@ setup(
     author='Michael Wayne Goodman',
     author_email='goodman.m.w@gmail.com',
     description='Libraries and scripts for DELPH-IN data.',
-    packages=['delphin'],
+    packages=['delphin', 'delphin.mrs', 'delphin.extra', 'delphin.interfaces', 'delphin.codecs'],
     cmdclass={'test':TestCommand},
     install_requires=[
         'networkx',
