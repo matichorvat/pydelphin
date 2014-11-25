@@ -163,9 +163,9 @@ def encode(ms, strict=False, encoding='UTF-8', pretty_print=False):
         e.append(encode_dmrs(m, strict=strict))
     # for now, pretty_print=True is the same as pretty_print='LKB'
     if pretty_print in (u'LKB', u'lkb', u'Lkb', True):
-        lkb_pprint_re = re.compile(ur'(<dmrs[^>]+>|</node>|</link>|</dmrs>)')
-        string = unicode(etree.tostring(e, encoding=encoding))
-        return lkb_pprint_re.sub(ur'\1\n', string)
+        lkb_pprint_re = re.compile(r'(<dmrs[^>]+>|</node>|</link>|</dmrs>)')
+        string = etree.tostring(e, encoding=encoding)
+        return lkb_pprint_re.sub(r'\1\n', string)
     # pretty_print is only lxml. Look into tostringlist, maybe?
     # return etree.tostring(e, pretty_print=pretty_print, encoding='unicode')
     return etree.tostring(e, encoding=encoding)
