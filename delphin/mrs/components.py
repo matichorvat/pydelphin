@@ -418,8 +418,11 @@ class Pred(namedtuple('Pred', ('type', 'lemma', 'pos', 'sense', 'string'))):
             other = Pred.stringpred(other)
         return self.short_form().lower() == other.short_form().lower()
 
-    def __str__ (self):
+    def __unicode__ (self):
         return self.string
+
+    def __str__(self):
+        return self.__unicode__().encode('utf-8')
 
     def __repr__(self):
         return '<Pred object {} at {}>'.format(self.string, id(self))
