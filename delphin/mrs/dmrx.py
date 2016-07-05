@@ -168,7 +168,7 @@ def serialize(ms, strict=False, encoding='unicode', pretty_print=False):
     # for now, pretty_print=True is the same as pretty_print='LKB'
     if pretty_print in ('LKB', 'lkb', 'Lkb', True):
         lkb_pprint_re = re.compile(r'(<dmrs[^>]+>|</node>|</link>|</dmrs>)')
-        string = str(etree_tostring(e, encoding=encoding))
+        string = etree_tostring(e, encoding=encoding)
         return lkb_pprint_re.sub(r'\1\n', string)
     # pretty_print is only lxml. Look into tostringlist, maybe?
     # return etree.tostring(e, pretty_print=pretty_print, encoding='unicode')
