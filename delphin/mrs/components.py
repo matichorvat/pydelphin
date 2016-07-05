@@ -418,11 +418,8 @@ class Pred(namedtuple('Pred', ('type', 'lemma', 'pos', 'sense', 'string'))):
             other = Pred.stringpred(other)
         return self.short_form().lower() == other.short_form().lower()
 
-    def __unicode__ (self):
+    def __str__ (self):
         return self.string
-
-    def __str__(self):
-        return self.__unicode__().encode('utf-8')
 
     def __repr__(self):
         return '<Pred object {} at {}>'.format(self.string, id(self))
@@ -498,13 +495,13 @@ def split_pred_string(predstr):
     predstr = predstr.strip('"\'')  # surrounding quotes don't matter
     rel_added = False
     if not predstr.lower().endswith('_rel'):
-        logging.debug('Predicate does not end in "_rel": {}'
+        logging.debug(u'Predicate does not end in "_rel": {}'
                       .format(predstr))
         rel_added = True
         predstr += '_rel'
     match = Pred.pred_re.search(predstr)
     if match is None:
-        logging.debug('Unexpected predicate string: {}'.format(predstr))
+        logging.debug(u'Unexpected predicate string: {}'.format(predstr))
         return (predstr, None, None, None)
     # _lemma_pos(_sense)?_end
     return (match.group('lemma'), match.group('pos'),
